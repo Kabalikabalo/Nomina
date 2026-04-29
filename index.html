@@ -1,1 +1,1019 @@
-placeholder
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nomina</title>
+
+  <!-- Cytoscape.js graph library -->
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #f7f3ed;
+      --panel: #fbf8f2;
+      --panel-2: #fffdf8;
+      --ink: #18202a;
+      --muted: #7a7166;
+      --line: #ddd4c7;
+      --name: #dfeee0;
+      --word: #dceafb;
+      --concept: #eadcf8;
+      --selected: #0e1a2b;
+      --accent: #b98d5b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 260px 1fr 380px;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(255,255,255,0.8), transparent 35%),
+        linear-gradient(135deg, #f6f0e8, #fbf8f2);
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--line);
+      background: rgba(251, 248, 242, 0.9);
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 34px;
+    }
+
+    .brand {
+      letter-spacing: 0.16em;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 26px;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .nav {
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+      font-size: 14px;
+    }
+
+    .nav button {
+      border: 0;
+      background: transparent;
+      text-align: left;
+      color: var(--muted);
+      padding: 8px 0;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .nav button.active {
+      color: var(--ink);
+      font-weight: 650;
+    }
+
+    .legend {
+      margin-top: auto;
+      font-size: 12px;
+      color: var(--muted);
+      display: grid;
+      gap: 10px;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    .dot.name { background: var(--name); }
+    .dot.word { background: var(--word); }
+    .dot.concept { background: var(--concept); }
+
+    .main {
+      position: relative;
+      display: grid;
+      grid-template-rows: 86px 1fr;
+      min-width: 0;
+    }
+
+    .topbar {
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      gap: 20px;
+      background: rgba(251, 248, 242, 0.55);
+      backdrop-filter: blur(10px);
+      z-index: 5;
+    }
+
+    .search-wrap {
+      position: relative;
+      width: min(520px, 100%);
+    }
+
+    .search {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.85);
+      color: var(--ink);
+      border-radius: 18px;
+      padding: 14px 18px;
+      outline: none;
+      font-size: 14px;
+      box-shadow: 0 8px 24px rgba(30, 20, 10, 0.04);
+    }
+
+    .search:focus {
+      border-color: rgba(185, 141, 91, 0.75);
+      box-shadow: 0 0 0 4px rgba(185, 141, 91, 0.14);
+    }
+
+    .search-results {
+      position: absolute;
+      top: 54px;
+      left: 0;
+      right: 0;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 18px 40px rgba(40, 30, 20, 0.14);
+      overflow: hidden;
+      display: none;
+      z-index: 20;
+    }
+
+    .search-result {
+      padding: 12px 16px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      font-size: 14px;
+      border-bottom: 1px solid rgba(221, 212, 199, 0.55);
+    }
+
+    .search-result:last-child {
+      border-bottom: 0;
+    }
+
+    .search-result:hover {
+      background: #f4ede3;
+    }
+
+    .type-pill {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .status {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .graph-wrap {
+      position: relative;
+      min-height: 0;
+    }
+
+    #cy {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .graph-hint {
+      position: absolute;
+      left: 28px;
+      bottom: 24px;
+      color: var(--muted);
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(221,212,199,0.8);
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 12px;
+      backdrop-filter: blur(8px);
+      pointer-events: none;
+    }
+
+    .detail {
+      border-left: 1px solid var(--line);
+      background: rgba(251, 248, 242, 0.96);
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    .detail-close {
+      float: right;
+      border: 0;
+      background: transparent;
+      font-size: 24px;
+      line-height: 1;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .detail-kicker {
+      color: var(--accent);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .detail-title {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 38px;
+      line-height: 1.05;
+      margin: 0 24px 8px 0;
+    }
+
+    .detail-sub {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 26px;
+    }
+
+    .section {
+      border-top: 1px solid var(--line);
+      padding-top: 20px;
+      margin-top: 22px;
+    }
+
+    .section h3 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    .section p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.75;
+      color: #403a33;
+    }
+
+    .source-list {
+      padding-left: 18px;
+      margin: 8px 0 0;
+      color: #403a33;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .error {
+      background: #fff4f1;
+      border: 1px solid #eab7a8;
+      color: #8b2d1f;
+      padding: 14px 16px;
+      border-radius: 14px;
+      font-size: 13px;
+      line-height: 1.55;
+      margin-top: 18px;
+    }
+
+    @media (max-width: 980px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .detail {
+        height: 42vh;
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div>
+        <div class="brand">NOMINA</div>
+        <div class="subtitle">An etymological map of names, roots, meanings, and lineages.</div>
+      </div>
+
+      <nav class="nav">
+        <button class="active">Network</button>
+        <button>Dictionary</button>
+        <button>Lineages</button>
+        <button>Sources</button>
+      </nav>
+
+      <div class="legend">
+        <div class="legend-row"><span class="dot name"></span> Name node</div>
+        <div class="legend-row"><span class="dot word"></span> Word node</div>
+        <div class="legend-row"><span class="dot concept"></span> Concept node</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="search-wrap">
+          <input id="searchInput" class="search" placeholder="Search for a name, word, or concept..." />
+          <div id="searchResults" class="search-results"></div>
+        </div>
+        <div id="status" class="status">Loading Alexander…</div>
+      </header>
+
+      <section class="graph-wrap">
+        <div id="cy"></div>
+        <div class="graph-hint">Pan, zoom, and click a node to open its entry.</div>
+      </section>
+    </main>
+
+    <aside class="detail">
+      <button class="detail-close" id="resetButton" title="Reset to Alexander">×</button>
+      <div class="detail-kicker" id="detailType">Name</div>
+      <h1 class="detail-title" id="detailTitle">Alexander</h1>
+      <div class="detail-sub" id="detailSubtitle">Loading…</div>
+
+      <div class="section">
+        <h3>Summary</h3>
+        <p id="detailSummary" class="empty">Click a node to view its details.</p>
+      </div>
+
+      <div class="section">
+        <h3>Notes</h3>
+        <p id="detailNotes" class="empty">No notes loaded yet.</p>
+      </div>
+
+      <div class="section">
+        <h3>Sources</h3>
+        <ul id="detailSources" class="source-list"></ul>
+      </div>
+
+      <div id="errorBox"></div>
+    </aside>
+  </div>
+
+  <script>
+    // ======================================================
+    // NOMINA CONFIG
+    // This is a publishable key, not a secret service-role key.
+    // Do not put service_role keys in browser code.
+    // ======================================================
+
+    const SUPABASE_URL = "https://zvxcmsmiyobqddmyucym.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_saIvswOOJwESDFLZO1jVdQ__gb-m_bJ";
+
+    let cy = null;
+    let currentNodes = [];
+    let currentEdges = [];
+    let currentLineage = null;
+
+    const els = {
+      status: document.getElementById("status"),
+      searchInput: document.getElementById("searchInput"),
+      searchResults: document.getElementById("searchResults"),
+      resetButton: document.getElementById("resetButton"),
+      detailType: document.getElementById("detailType"),
+      detailTitle: document.getElementById("detailTitle"),
+      detailSubtitle: document.getElementById("detailSubtitle"),
+      detailSummary: document.getElementById("detailSummary"),
+      detailNotes: document.getElementById("detailNotes"),
+      detailSources: document.getElementById("detailSources"),
+      errorBox: document.getElementById("errorBox")
+    };
+
+    function setStatus(message) {
+      els.status.textContent = message;
+    }
+
+    function showError(message) {
+      els.errorBox.innerHTML = `<div class="error">${escapeHtml(message)}</div>`;
+      console.error(message);
+    }
+
+    function clearError() {
+      els.errorBox.innerHTML = "";
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function apiUrl(table, params = {}) {
+      const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null) {
+          url.searchParams.set(key, value);
+        }
+      }
+      return url.toString();
+    }
+
+    async function db(table, params = {}) {
+      const response = await fetch(apiUrl(table, params), {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Supabase error on ${table}: ${response.status} ${text}`);
+      }
+
+      return response.json();
+    }
+
+    async function getSingle(table, params = {}) {
+      const rows = await db(table, { ...params, limit: "1" });
+      return rows?.[0] ?? null;
+    }
+
+    function flattenPathNodes(pathNodes) {
+      if (!Array.isArray(pathNodes)) return [];
+      return pathNodes.flat().filter(Boolean).map(String);
+    }
+
+    function unique(values) {
+      return [...new Set(values.filter(Boolean).map(String))];
+    }
+
+    async function loadGraphBySlug(slug = "alexander", nodeType = null) {
+      clearError();
+      setStatus(`Loading ${slug}…`);
+
+      const centerParams = nodeType
+        ? { select: "*", slug: `eq.${slug}`, node_type: `eq.${nodeType}` }
+        : { select: "*", slug: `eq.${slug}` };
+
+      const center = await getSingle("nodes", centerParams);
+
+      if (!center) {
+        throw new Error(`Could not find node with slug "${slug}".`);
+      }
+
+      await loadGraphByNode(center);
+    }
+
+    async function loadGraphByNode(center) {
+      clearError();
+
+      // Try to use the curated lineage first.
+      const lineage = await getSingle("lineages", {
+        select: "*",
+        node_id: `eq.${center.id}`,
+        lineage_type: "eq.primary"
+      });
+
+      currentLineage = lineage;
+
+      let initialIds = lineage ? flattenPathNodes(lineage.path_nodes) : [center.id];
+
+      if (!initialIds.includes(center.id)) {
+        initialIds.push(center.id);
+      }
+
+      // Fetch edges connected to the lineage/path IDs.
+      const initialIdsCsv = unique(initialIds).join(",");
+      let connectedEdges = [];
+
+      if (initialIdsCsv.length > 0) {
+        connectedEdges = await db("edges", {
+          select: "*",
+          or: `(from_node_id.in.(${initialIdsCsv}),to_node_id.in.(${initialIdsCsv}))`
+        });
+      }
+
+      // Add all edge endpoints so concept nodes connected to words appear too.
+      const expandedIds = new Set(initialIds);
+      for (const edge of connectedEdges) {
+        expandedIds.add(edge.from_node_id);
+        expandedIds.add(edge.to_node_id);
+      }
+
+      const allIds = unique([...expandedIds]);
+      const allIdsCsv = allIds.join(",");
+
+      const nodes = allIdsCsv
+        ? await db("nodes", { select: "*", id: `in.(${allIdsCsv})` })
+        : [];
+
+      const nodeIdSet = new Set(nodes.map(n => n.id));
+
+      const edges = connectedEdges.filter(edge =>
+        nodeIdSet.has(edge.from_node_id) && nodeIdSet.has(edge.to_node_id)
+      );
+
+      currentNodes = nodes;
+      currentEdges = edges;
+
+      renderGraph(nodes, edges, center.id, lineage);
+      await selectNode(center.id);
+
+      setStatus(`${nodes.length} nodes · ${edges.length} edges`);
+    }
+
+    function renderGraph(nodes, edges, centerNodeId, lineage) {
+      const positions = makePositions(nodes, edges, centerNodeId, lineage);
+
+      const cyNodes = nodes.map(node => ({
+        data: {
+          id: node.id,
+          label: node.display_label,
+          slug: node.slug,
+          nodeType: node.node_type,
+          description: node.description_short || ""
+        },
+        position: positions[node.id] ?? { x: 400 + Math.random() * 120, y: 300 + Math.random() * 120 },
+        classes: `${node.node_type} ${node.id === centerNodeId ? "selected" : ""}`
+      }));
+
+      const cyEdges = edges.map(edge => ({
+        data: {
+          id: edge.id,
+          source: edge.from_node_id,
+          target: edge.to_node_id,
+          code: edge.edge_type_code,
+          label: edge.edge_type_code.replaceAll("_", " "),
+          certainty: edge.certainty,
+          explanation: edge.explanation || ""
+        },
+        classes: edge.edge_type_code
+      }));
+
+      if (cy) {
+        cy.destroy();
+      }
+
+      cy = cytoscape({
+        container: document.getElementById("cy"),
+        elements: [...cyNodes, ...cyEdges],
+        layout: { name: "preset", fit: true, padding: 70 },
+        minZoom: 0.25,
+        maxZoom: 2.2,
+        wheelSensitivity: 0.18,
+        style: [
+          {
+            selector: "node",
+            style: {
+              "width": 92,
+              "height": 92,
+              "background-color": "#dfeee0",
+              "border-width": 1.5,
+              "border-color": "#cad6ca",
+              "label": "data(label)",
+              "font-size": 13,
+              "font-weight": 600,
+              "font-family": "Inter, system-ui, sans-serif",
+              "color": "#18202a",
+              "text-valign": "center",
+              "text-halign": "center",
+              "text-wrap": "wrap",
+              "text-max-width": 86,
+              "overlay-opacity": 0,
+              "transition-property": "background-color, border-color, width, height",
+              "transition-duration": "180ms"
+            }
+          },
+          {
+            selector: "node.name",
+            style: {
+              "background-color": "#dfeee0",
+              "border-color": "#b8ceb9"
+            }
+          },
+          {
+            selector: "node.word",
+            style: {
+              "background-color": "#dceafb",
+              "border-color": "#b9cde4"
+            }
+          },
+          {
+            selector: "node.concept",
+            style: {
+              "background-color": "#eadcf8",
+              "border-color": "#d2bde8",
+              "font-size": 12
+            }
+          },
+          {
+            selector: "node.selected",
+            style: {
+              "width": 126,
+              "height": 126,
+              "background-color": "#0e1a2b",
+              "border-color": "#0e1a2b",
+              "color": "#ffffff",
+              "font-size": 19,
+              "font-family": "Georgia, serif",
+              "font-weight": 600
+            }
+          },
+          {
+            selector: "node:selected",
+            style: {
+              "border-width": 4,
+              "border-color": "#b98d5b"
+            }
+          },
+          {
+            selector: "edge",
+            style: {
+              "width": 2,
+              "line-color": "#8a9298",
+              "target-arrow-color": "#8a9298",
+              "target-arrow-shape": "triangle",
+              "curve-style": "bezier",
+              "label": "data(label)",
+              "font-size": 10,
+              "font-family": "Inter, system-ui, sans-serif",
+              "color": "#6f675f",
+              "text-background-color": "#f7f3ed",
+              "text-background-opacity": 0.82,
+              "text-background-padding": 3,
+              "text-rotation": "autorotate",
+              "overlay-opacity": 0
+            }
+          },
+          {
+            selector: "edge.meaning_of",
+            style: {
+              "line-style": "dotted",
+              "line-color": "#ad8bd4",
+              "target-arrow-color": "#ad8bd4"
+            }
+          },
+          {
+            selector: "edge.element_of",
+            style: {
+              "line-color": "#7896b8",
+              "target-arrow-color": "#7896b8"
+            }
+          },
+          {
+            selector: "edge.evolves_to",
+            style: {
+              "width": 2.6,
+              "line-color": "#45515f",
+              "target-arrow-color": "#45515f"
+            }
+          },
+          {
+            selector: "edge.variant_of",
+            style: {
+              "line-style": "dashed",
+              "line-color": "#92b184",
+              "target-arrow-shape": "none"
+            }
+          }
+        ]
+      });
+
+      cy.on("tap", "node", async (event) => {
+        await selectNode(event.target.id());
+      });
+
+      cy.on("tap", "edge", (event) => {
+        const edge = event.target.data();
+        els.detailType.textContent = "Relationship";
+        els.detailTitle.textContent = edge.label;
+        els.detailSubtitle.textContent = `Certainty: ${edge.certainty ?? "unknown"}`;
+        els.detailSummary.textContent = edge.explanation || "No explanation stored.";
+        els.detailNotes.textContent = "This is a graph relationship from the edges table.";
+        els.detailSources.innerHTML = "";
+      });
+
+      cy.fit(null, 70);
+    }
+
+    function makePositions(nodes, edges, centerNodeId, lineage) {
+      const positions = {};
+      const pathGroups = Array.isArray(lineage?.path_nodes) && lineage.path_nodes.length
+        ? lineage.path_nodes
+        : [[centerNodeId]];
+
+      const startX = 140;
+      const stepX = 230;
+      const centerY = 330;
+
+      pathGroups.forEach((group, groupIndex) => {
+        const members = group.map(String);
+        const total = members.length;
+        members.forEach((nodeId, memberIndex) => {
+          const offsetY = total === 1 ? 0 : (memberIndex - (total - 1) / 2) * 130;
+          positions[nodeId] = {
+            x: startX + groupIndex * stepX,
+            y: centerY + offsetY
+          };
+        });
+      });
+
+      // Place concepts to the left/above the words they define.
+      const usedConceptOffsets = {};
+
+      for (const edge of edges) {
+        if (edge.edge_type_code !== "meaning_of") continue;
+
+        const conceptId = edge.from_node_id;
+        const wordId = edge.to_node_id;
+        const wordPosition = positions[wordId];
+
+        if (!wordPosition || positions[conceptId]) continue;
+
+        usedConceptOffsets[wordId] = (usedConceptOffsets[wordId] ?? 0) + 1;
+
+        positions[conceptId] = {
+          x: wordPosition.x - 135,
+          y: wordPosition.y - 95 + usedConceptOffsets[wordId] * 48
+        };
+      }
+
+      // Any remaining nodes get placed around the centre node.
+      const remaining = nodes.filter(node => !positions[node.id]);
+      remaining.forEach((node, index) => {
+        const angle = (Math.PI * 2 * index) / Math.max(remaining.length, 1);
+        positions[node.id] = {
+          x: startX + pathGroups.length * stepX + 160 * Math.cos(angle),
+          y: centerY + 160 * Math.sin(angle)
+        };
+      });
+
+      return positions;
+    }
+
+    async function selectNode(nodeId) {
+      const node = currentNodes.find(n => n.id === nodeId);
+
+      if (!node) return;
+
+      els.detailType.textContent = node.node_type;
+      els.detailTitle.textContent = node.display_label;
+      els.detailSubtitle.textContent = node.description_short || node.slug;
+      els.detailSummary.textContent = node.description_short || "No short description stored.";
+      els.detailNotes.textContent = "Loading details…";
+      els.detailSources.innerHTML = "";
+
+      if (cy) {
+        cy.nodes().removeClass("selected");
+        cy.getElementById(nodeId).addClass("selected");
+      }
+
+      try {
+        const details = await loadDetailsForNode(node);
+
+        renderDetails(node, details);
+      } catch (error) {
+        console.error(error);
+        els.detailNotes.textContent = "Could not load detailed entry.";
+      }
+    }
+
+    async function loadDetailsForNode(node) {
+      const tableByType = {
+        name: "names",
+        word: "words",
+        concept: "concepts"
+      };
+
+      const table = tableByType[node.node_type];
+      if (!table) return { detail: null, language: null, sources: [] };
+
+      const detail = await getSingle(table, {
+        select: "*",
+        node_id: `eq.${node.id}`
+      });
+
+      let language = null;
+      const languageId = detail?.primary_language_id || detail?.language_id;
+
+      if (languageId) {
+        language = await getSingle("languages", {
+          select: "*",
+          id: `eq.${languageId}`
+        });
+      }
+
+      const sourceIds = Array.isArray(detail?.source_ids)
+        ? detail.source_ids
+        : [];
+
+      let sources = [];
+
+      if (sourceIds.length > 0) {
+        sources = await db("sources", {
+          select: "*",
+          id: `in.(${sourceIds.join(",")})`
+        });
+      }
+
+      return { detail, language, sources };
+    }
+
+    function renderDetails(node, { detail, language, sources }) {
+      els.detailType.textContent = node.node_type;
+      els.detailTitle.textContent = node.display_label;
+
+      const languageText = language?.name ? ` · ${language.name}` : "";
+      els.detailSubtitle.textContent = `${node.slug}${languageText}`;
+
+      if (!detail) {
+        els.detailSummary.textContent = node.description_short || "No detail record found.";
+        els.detailNotes.textContent = "This node exists in the graph, but its detail table row has not been added yet.";
+        els.detailSources.innerHTML = "";
+        return;
+      }
+
+      if (node.node_type === "name") {
+        els.detailSummary.textContent = detail.short_summary || node.description_short || "No summary stored.";
+
+        els.detailNotes.textContent = [
+          detail.long_summary,
+          detail.cultural_notes,
+          detail.literary_notes,
+          detail.pronunciation_notes ? `Pronunciation: ${detail.pronunciation_notes}` : "",
+          detail.certainty_notes ? `Certainty: ${detail.certainty_notes}` : ""
+        ].filter(Boolean).join("\n\n") || "No notes stored.";
+      }
+
+      if (node.node_type === "word") {
+        els.detailSummary.textContent = detail.literal_meaning
+          ? `${detail.display_text || node.display_label}: ${detail.literal_meaning}`
+          : node.description_short || "No summary stored.";
+
+        els.detailNotes.textContent = [
+          detail.original_script ? `Original script: ${detail.original_script}` : "",
+          detail.transliteration ? `Transliteration: ${detail.transliteration}` : "",
+          detail.word_type ? `Type: ${detail.word_type}` : "",
+          detail.grammar_notes,
+          detail.additional_notes
+        ].filter(Boolean).join("\n\n") || "No notes stored.";
+      }
+
+      if (node.node_type === "concept") {
+        els.detailSummary.textContent = detail.description || node.description_short || "No concept description stored.";
+        els.detailNotes.textContent = "Concept nodes represent meanings rather than direct ancestry.";
+      }
+
+      renderSources(sources);
+    }
+
+    function renderSources(sources) {
+      els.detailSources.innerHTML = "";
+
+      if (!sources || sources.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "No sources linked yet.";
+        els.detailSources.appendChild(li);
+        return;
+      }
+
+      for (const source of sources) {
+        const li = document.createElement("li");
+
+        if (source.url) {
+          const a = document.createElement("a");
+          a.href = source.url;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          a.textContent = source.citation_text || source.title;
+          li.appendChild(a);
+        } else {
+          li.textContent = source.citation_text || source.title;
+        }
+
+        els.detailSources.appendChild(li);
+      }
+    }
+
+    let searchTimer = null;
+
+    els.searchInput.addEventListener("input", () => {
+      clearTimeout(searchTimer);
+
+      const query = els.searchInput.value.trim();
+
+      if (query.length < 2) {
+        els.searchResults.style.display = "none";
+        els.searchResults.innerHTML = "";
+        return;
+      }
+
+      searchTimer = setTimeout(() => runSearch(query), 220);
+    });
+
+    async function runSearch(query) {
+      const safeQuery = query.replace(/[(),]/g, "").trim();
+
+      if (!safeQuery) return;
+
+      try {
+        const results = await db("nodes", {
+          select: "*",
+          or: `(slug.ilike.*${safeQuery}*,display_label.ilike.*${safeQuery}*)`,
+          limit: "8"
+        });
+
+        els.searchResults.innerHTML = "";
+
+        if (!results.length) {
+          els.searchResults.innerHTML = `<div class="search-result">No results</div>`;
+          els.searchResults.style.display = "block";
+          return;
+        }
+
+        for (const result of results) {
+          const row = document.createElement("div");
+          row.className = "search-result";
+          row.innerHTML = `
+            <span>${escapeHtml(result.display_label)}</span>
+            <span class="type-pill">${escapeHtml(result.node_type)}</span>
+          `;
+
+          row.addEventListener("click", async () => {
+            els.searchInput.value = result.display_label;
+            els.searchResults.style.display = "none";
+            await loadGraphByNode(result);
+          });
+
+          els.searchResults.appendChild(row);
+        }
+
+        els.searchResults.style.display = "block";
+      } catch (error) {
+        console.error(error);
+        els.searchResults.innerHTML = `<div class="search-result">Search failed</div>`;
+        els.searchResults.style.display = "block";
+      }
+    }
+
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest(".search-wrap")) {
+        els.searchResults.style.display = "none";
+      }
+    });
+
+    els.resetButton.addEventListener("click", () => {
+      loadGraphBySlug("alexander", "name").catch((error) => {
+        showError(error.message);
+        setStatus("Error");
+      });
+    });
+
+    // Boot
+    loadGraphBySlug("alexander", "name").catch((error) => {
+      showError(
+        `${error.message}
+
+If this is a permissions issue, check Supabase Row Level Security. For a quick prototype, the browser needs read access to nodes, edges, edge_types, names, words, concepts, lineages, languages, and sources.`
+      );
+      setStatus("Error");
+    });
+  </script>
+</body>
+</html>
