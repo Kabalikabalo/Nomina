@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Nomina</title>
 
-  <!-- Cytoscape.js graph library -->
   <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
 
   <style>
@@ -283,6 +282,7 @@
       font-size: 14px;
       line-height: 1.75;
       color: #403a33;
+      white-space: pre-line;
     }
 
     .source-list {
@@ -308,6 +308,7 @@
       font-size: 13px;
       line-height: 1.55;
       margin-top: 18px;
+      white-space: pre-line;
     }
 
     @media (max-width: 980px) {
@@ -324,6 +325,111 @@
         height: 42vh;
         border-left: 0;
         border-top: 1px solid var(--line);
+      }
+    }
+
+    /* Landscape phone layout */
+    @media (orientation: landscape) and (max-height: 620px) {
+      body {
+        height: 100dvh;
+        overflow: hidden;
+      }
+
+      .app {
+        height: 100dvh;
+        grid-template-columns: 1fr min(360px, 38vw);
+        grid-template-rows: 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .main {
+        grid-template-rows: 58px 1fr;
+        min-height: 0;
+      }
+
+      .topbar {
+        height: 58px;
+        padding: 0 14px;
+      }
+
+      .search-wrap {
+        width: min(430px, 70vw);
+      }
+
+      .search {
+        padding: 10px 14px;
+        border-radius: 14px;
+        font-size: 13px;
+      }
+
+      .search-results {
+        top: 46px;
+      }
+
+      .status {
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .graph-wrap {
+        min-height: 0;
+        height: calc(100dvh - 58px);
+      }
+
+      #cy {
+        height: 100%;
+        width: 100%;
+      }
+
+      .graph-hint {
+        left: 12px;
+        bottom: 10px;
+        padding: 7px 10px;
+        font-size: 11px;
+        border-radius: 10px;
+      }
+
+      .detail {
+        display: block;
+        height: 100dvh;
+        width: auto;
+        border-left: 1px solid var(--line);
+        border-top: 0;
+        padding: 18px;
+        overflow-y: auto;
+      }
+
+      .detail-title {
+        font-size: 28px;
+        line-height: 1.05;
+      }
+
+      .detail-sub {
+        margin-bottom: 16px;
+        font-size: 12px;
+      }
+
+      .section {
+        padding-top: 14px;
+        margin-top: 14px;
+      }
+
+      .section h3 {
+        font-size: 11px;
+        margin-bottom: 7px;
+      }
+
+      .section p,
+      .source-list {
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .detail-close {
+        font-size: 20px;
       }
     }
   </style>
@@ -392,12 +498,6 @@
   </div>
 
   <script>
-    // ======================================================
-    // NOMINA CONFIG
-    // This is a publishable key, not a secret service-role key.
-    // Do not put service_role keys in browser code.
-    // ======================================================
-
     const SUPABASE_URL = "https://zvxcmsmiyobqddmyucym.supabase.co";
     const SUPABASE_KEY = "sb_publishable_saIvswOOJwESDFLZO1jVdQ__gb-m_bJ";
 
@@ -455,8 +555,8 @@
     async function db(table, params = {}) {
       const response = await fetch(apiUrl(table, params), {
         headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
           "Content-Type": "application/json"
         }
       });
@@ -503,7 +603,6 @@
     async function loadGraphByNode(center) {
       clearError();
 
-      // Try to use the curated lineage first.
       const lineage = await getSingle("lineages", {
         select: "*",
         node_id: `eq.${center.id}`,
@@ -518,7 +617,6 @@
         initialIds.push(center.id);
       }
 
-      // Fetch edges connected to the lineage/path IDs.
       const initialIdsCsv = unique(initialIds).join(",");
       let connectedEdges = [];
 
@@ -529,8 +627,8 @@
         });
       }
 
-      // Add all edge endpoints so concept nodes connected to words appear too.
       const expandedIds = new Set(initialIds);
+
       for (const edge of connectedEdges) {
         expandedIds.add(edge.from_node_id);
         expandedIds.add(edge.to_node_id);
@@ -569,7 +667,10 @@
           nodeType: node.node_type,
           description: node.description_short || ""
         },
-        position: positions[node.id] ?? { x: 400 + Math.random() * 120, y: 300 + Math.random() * 120 },
+        position: positions[node.id] ?? {
+          x: 400 + Math.random() * 120,
+          y: 300 + Math.random() * 120
+        },
         classes: `${node.node_type} ${node.id === centerNodeId ? "selected" : ""}`
       }));
 
@@ -601,16 +702,16 @@
           {
             selector: "node",
             style: {
-              "width": 92,
-              "height": 92,
+              width: 92,
+              height: 92,
               "background-color": "#dfeee0",
               "border-width": 1.5,
               "border-color": "#cad6ca",
-              "label": "data(label)",
+              label: "data(label)",
               "font-size": 13,
               "font-weight": 600,
               "font-family": "Inter, system-ui, sans-serif",
-              "color": "#18202a",
+              color: "#18202a",
               "text-valign": "center",
               "text-halign": "center",
               "text-wrap": "wrap",
@@ -645,11 +746,11 @@
           {
             selector: "node.selected",
             style: {
-              "width": 126,
-              "height": 126,
+              width: 126,
+              height: 126,
               "background-color": "#0e1a2b",
               "border-color": "#0e1a2b",
-              "color": "#ffffff",
+              color: "#ffffff",
               "font-size": 19,
               "font-family": "Georgia, serif",
               "font-weight": 600
@@ -665,15 +766,15 @@
           {
             selector: "edge",
             style: {
-              "width": 2,
+              width: 2,
               "line-color": "#8a9298",
               "target-arrow-color": "#8a9298",
               "target-arrow-shape": "triangle",
               "curve-style": "bezier",
-              "label": "data(label)",
+              label: "data(label)",
               "font-size": 10,
               "font-family": "Inter, system-ui, sans-serif",
-              "color": "#6f675f",
+              color: "#6f675f",
               "text-background-color": "#f7f3ed",
               "text-background-opacity": 0.82,
               "text-background-padding": 3,
@@ -699,7 +800,7 @@
           {
             selector: "edge.evolves_to",
             style: {
-              "width": 2.6,
+              width: 2.6,
               "line-color": "#45515f",
               "target-arrow-color": "#45515f"
             }
@@ -738,15 +839,20 @@
         ? lineage.path_nodes
         : [[centerNodeId]];
 
-      const startX = 140;
-      const stepX = 230;
-      const centerY = 330;
+      const isLandscapePhone = window.matchMedia("(orientation: landscape) and (max-height: 620px)").matches;
+
+      const startX = isLandscapePhone ? 90 : 140;
+      const stepX = isLandscapePhone ? 175 : 230;
+      const centerY = isLandscapePhone ? 220 : 330;
+      const branchGap = isLandscapePhone ? 92 : 130;
 
       pathGroups.forEach((group, groupIndex) => {
         const members = group.map(String);
         const total = members.length;
+
         members.forEach((nodeId, memberIndex) => {
-          const offsetY = total === 1 ? 0 : (memberIndex - (total - 1) / 2) * 130;
+          const offsetY = total === 1 ? 0 : (memberIndex - (total - 1) / 2) * branchGap;
+
           positions[nodeId] = {
             x: startX + groupIndex * stepX,
             y: centerY + offsetY
@@ -754,7 +860,6 @@
         });
       });
 
-      // Place concepts to the left/above the words they define.
       const usedConceptOffsets = {};
 
       for (const edge of edges) {
@@ -769,15 +874,16 @@
         usedConceptOffsets[wordId] = (usedConceptOffsets[wordId] ?? 0) + 1;
 
         positions[conceptId] = {
-          x: wordPosition.x - 135,
-          y: wordPosition.y - 95 + usedConceptOffsets[wordId] * 48
+          x: wordPosition.x - (isLandscapePhone ? 95 : 135),
+          y: wordPosition.y - (isLandscapePhone ? 66 : 95) + usedConceptOffsets[wordId] * (isLandscapePhone ? 38 : 48)
         };
       }
 
-      // Any remaining nodes get placed around the centre node.
       const remaining = nodes.filter(node => !positions[node.id]);
+
       remaining.forEach((node, index) => {
         const angle = (Math.PI * 2 * index) / Math.max(remaining.length, 1);
+
         positions[node.id] = {
           x: startX + pathGroups.length * stepX + 160 * Math.cos(angle),
           y: centerY + 160 * Math.sin(angle)
@@ -806,7 +912,6 @@
 
       try {
         const details = await loadDetailsForNode(node);
-
         renderDetails(node, details);
       } catch (error) {
         console.error(error);
@@ -822,7 +927,10 @@
       };
 
       const table = tableByType[node.node_type];
-      if (!table) return { detail: null, language: null, sources: [] };
+
+      if (!table) {
+        return { detail: null, language: null, sources: [] };
+      }
 
       const detail = await getSingle(table, {
         select: "*",
@@ -1005,7 +1113,26 @@
       });
     });
 
-    // Boot
+    window.addEventListener("resize", () => {
+      if (!cy) return;
+
+      window.clearTimeout(window.__nominaResizeTimer);
+
+      window.__nominaResizeTimer = window.setTimeout(() => {
+        cy.resize();
+        cy.fit(null, 60);
+      }, 180);
+    });
+
+    window.addEventListener("orientationchange", () => {
+      if (!cy) return;
+
+      window.setTimeout(() => {
+        cy.resize();
+        cy.fit(null, 60);
+      }, 350);
+    });
+
     loadGraphBySlug("alexander", "name").catch((error) => {
       showError(
         `${error.message}
