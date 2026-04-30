@@ -363,22 +363,222 @@
       white-space: pre-line;
     }
 
-    @media (max-width: 980px) {
-      .app {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr auto;
-      }
+    @/* General tablet / mobile portrait layout */
+@media (max-width: 980px) {
+  body {
+    height: 100dvh;
+  }
 
-      .sidebar {
-        display: none;
-      }
+  .app {
+    height: 100dvh;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
 
-      .detail {
-        height: 42vh;
-        border-left: 0;
-        border-top: 1px solid var(--line);
-      }
-    }
+  .sidebar {
+    display: none;
+  }
+
+  .main {
+    min-height: 0;
+    grid-template-rows: 72px 1fr;
+  }
+
+  .topbar {
+    padding: 0 14px;
+    gap: 10px;
+  }
+
+  .search-wrap {
+    width: 100%;
+  }
+
+  .search {
+    border-radius: 14px;
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .status {
+    display: none;
+  }
+
+  .graph-hint {
+    left: 12px;
+    bottom: 12px;
+    font-size: 11px;
+    max-width: calc(100vw - 24px);
+  }
+
+  .detail {
+    height: 40dvh;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding: 18px;
+  }
+
+  .detail-title {
+    font-size: 28px;
+  }
+
+  .section {
+    margin-top: 16px;
+    padding-top: 14px;
+  }
+}
+
+/* Mobile landscape layout */
+@media (max-width: 980px) and (orientation: landscape) {
+  body {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .app {
+    height: 100dvh;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 34vw);
+    grid-template-rows: 1fr;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .main {
+    min-width: 0;
+    min-height: 0;
+    grid-template-rows: 58px 1fr;
+  }
+
+  .topbar {
+    height: 58px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .search-wrap {
+    width: 100%;
+  }
+
+  .search {
+    padding: 9px 12px;
+    border-radius: 13px;
+    font-size: 12px;
+  }
+
+  .search-results {
+    top: 44px;
+    border-radius: 14px;
+    max-height: calc(100dvh - 58px);
+    overflow-y: auto;
+  }
+
+  .search-result {
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+
+  .status {
+    display: none;
+  }
+
+  .graph-wrap {
+    min-width: 0;
+    min-height: 0;
+  }
+
+  #cy {
+    width: 100%;
+    height: 100%;
+  }
+
+  .graph-hint {
+    display: none;
+  }
+
+  .detail {
+    height: 100dvh;
+    min-height: 0;
+    border-left: 1px solid var(--line);
+    border-top: 0;
+    padding: 16px;
+    overflow-y: auto;
+  }
+
+  .detail-close {
+    font-size: 21px;
+  }
+
+  .detail-kicker {
+    font-size: 10px;
+    margin-bottom: 6px;
+  }
+
+  .detail-title {
+    font-size: 26px;
+    line-height: 1.05;
+    margin-bottom: 6px;
+  }
+
+  .detail-sub {
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+
+  .actions {
+    margin: 10px 0 4px;
+  }
+
+  .action-button {
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+
+  .section {
+    margin-top: 14px;
+    padding-top: 12px;
+  }
+
+  .section h3 {
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+
+  .section p,
+  .source-list {
+    font-size: 12px;
+    line-height: 1.55;
+  }
+}
+
+/* Very small phones in landscape */
+@media (max-width: 740px) and (orientation: landscape) {
+  .app {
+    grid-template-columns: minmax(0, 1fr) minmax(235px, 38vw);
+  }
+
+  .main {
+    grid-template-rows: 52px 1fr;
+  }
+
+  .topbar {
+    height: 52px;
+  }
+
+  .detail {
+    padding: 12px;
+  }
+
+  .detail-title {
+    font-size: 22px;
+  }
+
+  .section p,
+  .source-list {
+    font-size: 11.5px;
+  }
+}
   </style>
 </head>
 
@@ -2609,6 +2809,80 @@
         setStatus("Error");
       });
     });
+    function handleResponsiveResize() {
+        if (!cy) return;
+
+        cy.resize();
+
+        const isMobileLandscape =
+            window.matchMedia("(max-width: 980px) and (orientation: landscape)").matches;
+
+        if (isMobileLandscape) {
+            cy.minZoom(0.62);
+            cy.maxZoom(1.55);
+
+            cy.style()
+            .selector("node")
+            .style({
+                "width": 74,
+                "height": 74,
+                "font-size": 11,
+                "text-max-width": 66
+            })
+            .selector("node.selected")
+            .style({
+                "width": 96,
+                "height": 96,
+                "font-size": 15
+            })
+            .selector("edge")
+            .style({
+                "font-size": 7,
+                "text-opacity": 0.36
+            })
+            .update();
+        } else {
+            cy.minZoom(HARD_MIN_ZOOM);
+            cy.maxZoom(1.75);
+
+            cy.style()
+            .selector("node")
+            .style({
+                "width": 92,
+                "height": 92,
+                "font-size": 13,
+                "text-max-width": 82
+            })
+            .selector("node.selected")
+            .style({
+                "width": 126,
+                "height": 126,
+                "font-size": 19
+            })
+            .selector("edge")
+            .style({
+                "font-size": 9,
+                "text-opacity": 0.48
+            })
+            .update();
+        }
+
+        clampZoomToMinimum();
+
+        if (selectedNodeId) {
+            makeRoomAroundNode(selectedNodeId);
+        }
+        }
+
+        window.addEventListener("resize", () => {
+        clearTimeout(window.__nominaResizeTimer);
+        window.__nominaResizeTimer = setTimeout(handleResponsiveResize, 180);
+        });
+
+        window.addEventListener("orientationchange", () => {
+        clearTimeout(window.__nominaResizeTimer);
+        window.__nominaResizeTimer = setTimeout(handleResponsiveResize, 320);
+        });
 
     // Boot
     loadGraphBySlug("alexander", "name").catch((error) => {
