@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Nomina</title>
 
+  <!-- Cytoscape.js graph library -->
   <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
 
   <style>
@@ -20,6 +21,7 @@
       --concept: #eadcf8;
       --selected: #0e1a2b;
       --accent: #b98d5b;
+      --accent-dark: #7d5a31;
     }
 
     * {
@@ -38,9 +40,9 @@
     .app {
       height: 100vh;
       display: grid;
-      grid-template-columns: 260px 1fr 380px;
+      grid-template-columns: 250px 1fr 390px;
       background:
-        radial-gradient(circle at 30% 20%, rgba(255,255,255,0.8), transparent 35%),
+        radial-gradient(circle at 30% 20%, rgba(255,255,255,0.85), transparent 35%),
         linear-gradient(135deg, #f6f0e8, #fbf8f2);
     }
 
@@ -113,6 +115,7 @@
     .dot.name { background: var(--name); }
     .dot.word { background: var(--word); }
     .dot.concept { background: var(--concept); }
+    .dot.lineage { background: var(--accent); }
 
     .main {
       position: relative;
@@ -135,13 +138,13 @@
 
     .search-wrap {
       position: relative;
-      width: min(520px, 100%);
+      width: min(560px, 100%);
     }
 
     .search {
       width: 100%;
       border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.88);
       color: var(--ink);
       border-radius: 18px;
       padding: 14px 18px;
@@ -197,6 +200,11 @@
     .status {
       font-size: 13px;
       color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .status.loading {
+      color: var(--accent-dark);
     }
 
     .graph-wrap {
@@ -260,7 +268,41 @@
     .detail-sub {
       color: var(--muted);
       font-size: 13px;
-      margin-bottom: 26px;
+      margin-bottom: 18px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 18px 0 8px;
+    }
+
+    .action-button {
+      border: 1px solid var(--line);
+      background: #fffaf2;
+      color: var(--ink);
+      padding: 9px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: 120ms ease;
+    }
+
+    .action-button:hover {
+      border-color: rgba(185, 141, 91, 0.9);
+      color: var(--accent-dark);
+      transform: translateY(-1px);
+    }
+
+    .action-button.primary {
+      background: var(--selected);
+      color: white;
+      border-color: var(--selected);
+    }
+
+    .action-button.hidden {
+      display: none;
     }
 
     .section {
@@ -291,6 +333,16 @@
       color: #403a33;
       font-size: 13px;
       line-height: 1.65;
+    }
+
+    .source-list a {
+      color: var(--accent-dark);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(185,141,91,0.35);
+    }
+
+    .source-list a:hover {
+      border-bottom-color: var(--accent-dark);
     }
 
     .empty {
@@ -327,111 +379,6 @@
         border-top: 1px solid var(--line);
       }
     }
-
-    /* Landscape phone layout */
-    @media (orientation: landscape) and (max-height: 620px) {
-      body {
-        height: 100dvh;
-        overflow: hidden;
-      }
-
-      .app {
-        height: 100dvh;
-        grid-template-columns: 1fr min(360px, 38vw);
-        grid-template-rows: 1fr;
-      }
-
-      .sidebar {
-        display: none;
-      }
-
-      .main {
-        grid-template-rows: 58px 1fr;
-        min-height: 0;
-      }
-
-      .topbar {
-        height: 58px;
-        padding: 0 14px;
-      }
-
-      .search-wrap {
-        width: min(430px, 70vw);
-      }
-
-      .search {
-        padding: 10px 14px;
-        border-radius: 14px;
-        font-size: 13px;
-      }
-
-      .search-results {
-        top: 46px;
-      }
-
-      .status {
-        font-size: 12px;
-        white-space: nowrap;
-      }
-
-      .graph-wrap {
-        min-height: 0;
-        height: calc(100dvh - 58px);
-      }
-
-      #cy {
-        height: 100%;
-        width: 100%;
-      }
-
-      .graph-hint {
-        left: 12px;
-        bottom: 10px;
-        padding: 7px 10px;
-        font-size: 11px;
-        border-radius: 10px;
-      }
-
-      .detail {
-        display: block;
-        height: 100dvh;
-        width: auto;
-        border-left: 1px solid var(--line);
-        border-top: 0;
-        padding: 18px;
-        overflow-y: auto;
-      }
-
-      .detail-title {
-        font-size: 28px;
-        line-height: 1.05;
-      }
-
-      .detail-sub {
-        margin-bottom: 16px;
-        font-size: 12px;
-      }
-
-      .section {
-        padding-top: 14px;
-        margin-top: 14px;
-      }
-
-      .section h3 {
-        font-size: 11px;
-        margin-bottom: 7px;
-      }
-
-      .section p,
-      .source-list {
-        font-size: 12px;
-        line-height: 1.55;
-      }
-
-      .detail-close {
-        font-size: 20px;
-      }
-    }
   </style>
 </head>
 
@@ -446,7 +393,6 @@
       <nav class="nav">
         <button class="active">Network</button>
         <button>Dictionary</button>
-        <button>Lineages</button>
         <button>Sources</button>
       </nav>
 
@@ -454,6 +400,7 @@
         <div class="legend-row"><span class="dot name"></span> Name node</div>
         <div class="legend-row"><span class="dot word"></span> Word node</div>
         <div class="legend-row"><span class="dot concept"></span> Concept node</div>
+        <div class="legend-row"><span class="dot lineage"></span> Highlighted lineage</div>
       </div>
     </aside>
 
@@ -468,15 +415,20 @@
 
       <section class="graph-wrap">
         <div id="cy"></div>
-        <div class="graph-hint">Pan, zoom, and click a node to open its entry.</div>
+        <div class="graph-hint">Pan around the map. Nodes expand naturally when you move into their area.</div>
       </section>
     </main>
 
     <aside class="detail">
       <button class="detail-close" id="resetButton" title="Reset to Alexander">×</button>
+
       <div class="detail-kicker" id="detailType">Name</div>
       <h1 class="detail-title" id="detailTitle">Alexander</h1>
       <div class="detail-sub" id="detailSubtitle">Loading…</div>
+
+      <div class="actions">
+        <button id="lineageButton" class="action-button primary hidden">Show lineage</button>
+      </div>
 
       <div class="section">
         <h3>Summary</h3>
@@ -498,6 +450,12 @@
   </div>
 
   <script>
+    // ======================================================
+    // NOMINA CONFIG
+    // This is a publishable key, not a secret service-role key.
+    // Keep secret/service-role keys out of browser code.
+    // ======================================================
+
     const SUPABASE_URL = "https://zvxcmsmiyobqddmyucym.supabase.co";
     const SUPABASE_KEY = "sb_publishable_saIvswOOJwESDFLZO1jVdQ__gb-m_bJ";
 
@@ -505,6 +463,56 @@
     let currentNodes = [];
     let currentEdges = [];
     let currentLineage = null;
+    let selectedNodeId = null;
+    let selectedNodeLineage = null;
+    let lineageMode = false;
+    let activeLineageNodeId = null;
+
+    // Actual-node lazy exploration state.
+    // No portals/posters. New material is added as real graph nodes,
+    // but only when the user pans/zooms into that part of the map.
+    let loadedNodeIds = new Set();
+    let loadedEdgeIds = new Set();
+    let expandedNodeIds = new Set();
+    let lazyExploreTimer = null;
+    let lazyExploreInProgress = false;
+
+    const EXPAND_BATCH_SIZE = 1;
+    const MAX_EDGES_PER_CONCEPT_EXPANSION = 5;
+    const MAX_EDGES_PER_OTHER_EXPANSION = 6;
+    const ACTIVATION_MARGIN_RATIO = 0.18;
+
+    // Local spacing rules for newly revealed nodes.
+    // These are deliberately conservative because selected nodes are larger.
+    const NORMAL_NODE_RADIUS = 48;
+    const SELECTED_NODE_RADIUS = 72;
+    const NODE_CLEARANCE = 34;
+    const ACTIVE_COLLISION_MARGIN_PX = 900;
+    const NEW_NODE_MIN_PARENT_DISTANCE = 178;
+    const NEW_NODE_MAX_PARENT_DISTANCE = 315;
+
+    // Zoom control: trackpads can throw very large wheel deltas.
+    // Keep a stronger minimum zoom and clamp again on every zoom event.
+    const HARD_MIN_ZOOM = 0.72;
+    const SOFT_MAX_MIN_ZOOM = 0.96;
+    const LINEAGE_MIN_ZOOM_FACTOR = 1.02;
+    const LINEAGE_FIT_PADDING = 120;
+    let clampZoomInProgress = false;
+
+    // Viewport virtualisation: keep this conservative for now.
+    // The earlier version virtualised too aggressively and could restore
+    // isolated nodes before their edges. This threshold only kicks in when
+    // the graph is genuinely large.
+    const VIRTUALISE_AFTER_NODE_COUNT = 140;
+    const VIRTUALISE_MARGIN_PX = 4600;
+    const RESTORE_MARGIN_PX = 2600;
+    const MAX_PARENT_DISTANCE = 260;
+    let virtualNodeStore = new Map();
+    let virtualEdgeStore = new Map();
+    let viewportMaintenanceTimer = null;
+
+    // Avoid repeated Supabase calls for the same node during pan/zoom exploration.
+    let edgeCacheByNodeId = new Map();
 
     const els = {
       status: document.getElementById("status"),
@@ -517,7 +525,8 @@
       detailSummary: document.getElementById("detailSummary"),
       detailNotes: document.getElementById("detailNotes"),
       detailSources: document.getElementById("detailSources"),
-      errorBox: document.getElementById("errorBox")
+      errorBox: document.getElementById("errorBox"),
+      lineageButton: document.getElementById("lineageButton")
     };
 
     function setStatus(message) {
@@ -544,19 +553,21 @@
 
     function apiUrl(table, params = {}) {
       const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
+
       for (const [key, value] of Object.entries(params)) {
         if (value !== undefined && value !== null) {
           url.searchParams.set(key, value);
         }
       }
+
       return url.toString();
     }
 
     async function db(table, params = {}) {
       const response = await fetch(apiUrl(table, params), {
         headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
           "Content-Type": "application/json"
         }
       });
@@ -574,13 +585,37 @@
       return rows?.[0] ?? null;
     }
 
+    function unique(values) {
+      return [...new Set(values.filter(Boolean).map(String))];
+    }
+
     function flattenPathNodes(pathNodes) {
       if (!Array.isArray(pathNodes)) return [];
       return pathNodes.flat().filter(Boolean).map(String);
     }
 
-    function unique(values) {
-      return [...new Set(values.filter(Boolean).map(String))];
+    function edgeKey(edge) {
+      return String(edge.id ?? `${edge.from_node_id}-${edge.to_node_id}-${edge.edge_type_code}`);
+    }
+
+    async function loadLineageForNode(nodeId) {
+      return getSingle("lineages", {
+        select: "*",
+        node_id: `eq.${nodeId}`,
+        lineage_type: "eq.primary"
+      });
+    }
+
+    async function fetchEdgesForIds(ids) {
+      const cleanIds = unique(ids);
+      if (!cleanIds.length) return [];
+
+      const csv = cleanIds.join(",");
+
+      return db("edges", {
+        select: "*",
+        or: `(from_node_id.in.(${csv}),to_node_id.in.(${csv}))`
+      });
     }
 
     async function loadGraphBySlug(slug = "alexander", nodeType = null) {
@@ -600,64 +635,197 @@
       await loadGraphByNode(center);
     }
 
-    async function loadGraphByNode(center) {
+    async function loadGraphByNode(center, options = {}) {
       clearError();
 
-      const lineage = await getSingle("lineages", {
-        select: "*",
-        node_id: `eq.${center.id}`,
-        lineage_type: "eq.primary"
-      });
+      lineageMode = false;
+      activeLineageNodeId = null;
+      selectedNodeLineage = null;
+      expandedNodeIds = new Set();
+      lazyExploreInProgress = false;
+      clearTimeout(lazyExploreTimer);
+      virtualNodeStore = new Map();
+      virtualEdgeStore = new Map();
+      clearTimeout(viewportMaintenanceTimer);
+      edgeCacheByNodeId = new Map();
 
+      const lineage = await loadLineageForNode(center.id);
       currentLineage = lineage;
 
-      let initialIds = lineage ? flattenPathNodes(lineage.path_nodes) : [center.id];
+      let pathIds = lineage ? flattenPathNodes(lineage.path_nodes) : [center.id];
 
-      if (!initialIds.includes(center.id)) {
-        initialIds.push(center.id);
+      if (!pathIds.includes(center.id)) {
+        pathIds.push(center.id);
       }
 
-      const initialIdsCsv = unique(initialIds).join(",");
-      let connectedEdges = [];
+      pathIds = unique(pathIds);
+      const pathIdSet = new Set(pathIds);
 
-      if (initialIdsCsv.length > 0) {
-        connectedEdges = await db("edges", {
-          select: "*",
-          or: `(from_node_id.in.(${initialIdsCsv}),to_node_id.in.(${initialIdsCsv}))`
-        });
+      // Fetch only edges touching the curated path / selected node.
+      // Do NOT run a second-ring expansion here. Shared concept nodes like
+      // "protection" can connect to many unrelated families and would make
+      // the graph explode.
+      const rawEdges = await fetchEdgesForIds(pathIds);
+
+      const endpointIds = new Set(pathIds);
+      for (const edge of rawEdges) {
+        endpointIds.add(edge.from_node_id);
+        endpointIds.add(edge.to_node_id);
       }
 
-      const expandedIds = new Set(initialIds);
+      const endpointCsv = unique([...endpointIds]).join(",");
 
-      for (const edge of connectedEdges) {
-        expandedIds.add(edge.from_node_id);
-        expandedIds.add(edge.to_node_id);
+      const candidateNodes = endpointCsv
+        ? await db("nodes", { select: "*", id: `in.(${endpointCsv})` })
+        : [];
+
+      const candidateNodeById = new Map(candidateNodes.map(node => [node.id, node]));
+
+      const filteredEdges = rawEdges.filter(edge => {
+        const fromInPath = pathIdSet.has(edge.from_node_id);
+        const toInPath = pathIdSet.has(edge.to_node_id);
+
+        // Always include true lineage-internal edges.
+        if (fromInPath && toInPath) return true;
+
+        const fromNode = candidateNodeById.get(edge.from_node_id);
+        const toNode = candidateNodeById.get(edge.to_node_id);
+
+        if (!fromNode || !toNode) return false;
+
+        const pathNode = fromInPath ? fromNode : toNode;
+        const outsideNode = fromInPath ? toNode : fromNode;
+
+        // Keep nearby name branches from the name path:
+        // Latin Alexander → Alejandro, Alexander → Alex, Alexandros → Iskandar, etc.
+        if (
+          pathNode.node_type === "name" &&
+          outsideNode.node_type === "name" &&
+          ["evolves_to", "variant_of"].includes(edge.edge_type_code)
+        ) {
+          return true;
+        }
+
+        // Do NOT include shared-concept spillover:
+        // protection → helm should not appear when viewing Alexander,
+        // unless helm is actually part of Alexander's curated lineage.
+        return false;
+      });
+
+      const finalIds = new Set(pathIds);
+      for (const edge of filteredEdges) {
+        finalIds.add(edge.from_node_id);
+        finalIds.add(edge.to_node_id);
       }
 
-      const allIds = unique([...expandedIds]);
-      const allIdsCsv = allIds.join(",");
+      const finalCsv = unique([...finalIds]).join(",");
 
-      const nodes = allIdsCsv
-        ? await db("nodes", { select: "*", id: `in.(${allIdsCsv})` })
+      const nodes = finalCsv
+        ? await db("nodes", { select: "*", id: `in.(${finalCsv})` })
         : [];
 
       const nodeIdSet = new Set(nodes.map(n => n.id));
 
-      const edges = connectedEdges.filter(edge =>
+      const edges = filteredEdges.filter(edge =>
         nodeIdSet.has(edge.from_node_id) && nodeIdSet.has(edge.to_node_id)
       );
 
       currentNodes = nodes;
       currentEdges = edges;
+      loadedNodeIds = new Set(nodes.map(node => node.id));
+      loadedEdgeIds = new Set(edges.map(edge => edgeKey(edge)));
 
       renderGraph(nodes, edges, center.id, lineage);
       await selectNode(center.id);
 
+      if (options.highlightLineage && lineage) {
+        applyLineageHighlight(lineage, center.id);
+      }
+
       setStatus(`${nodes.length} nodes · ${edges.length} edges`);
+      scheduleLazyExplore(950);
+    }
+
+    async function buildLocalGraphForNode(center, lineage) {
+      let pathIds = lineage ? flattenPathNodes(lineage.path_nodes) : [center.id];
+
+      if (!pathIds.includes(center.id)) {
+        pathIds.push(center.id);
+      }
+
+      pathIds = unique(pathIds);
+      const pathIdSet = new Set(pathIds);
+
+      const rawEdges = await fetchEdgesForIds(pathIds);
+
+      const endpointIds = new Set(pathIds);
+      for (const edge of rawEdges) {
+        endpointIds.add(edge.from_node_id);
+        endpointIds.add(edge.to_node_id);
+      }
+
+      const endpointCsv = unique([...endpointIds]).join(",");
+
+      const candidateNodes = endpointCsv
+        ? await db("nodes", { select: "*", id: `in.(${endpointCsv})` })
+        : [];
+
+      const candidateNodeById = new Map(candidateNodes.map(node => [node.id, node]));
+
+      let filteredEdges;
+
+      if (!lineage) {
+        filteredEdges = rawEdges;
+      } else {
+        filteredEdges = rawEdges.filter(edge => {
+          const fromInPath = pathIdSet.has(edge.from_node_id);
+          const toInPath = pathIdSet.has(edge.to_node_id);
+
+          if (fromInPath && toInPath) return true;
+
+          const fromNode = candidateNodeById.get(edge.from_node_id);
+          const toNode = candidateNodeById.get(edge.to_node_id);
+
+          if (!fromNode || !toNode) return false;
+
+          const pathNode = fromInPath ? fromNode : toNode;
+          const outsideNode = fromInPath ? toNode : fromNode;
+
+          if (
+            pathNode.node_type === "name" &&
+            outsideNode.node_type === "name" &&
+            ["evolves_to", "variant_of"].includes(edge.edge_type_code)
+          ) {
+            return true;
+          }
+
+          return false;
+        });
+      }
+
+      const finalIds = new Set(pathIds);
+      for (const edge of filteredEdges) {
+        finalIds.add(edge.from_node_id);
+        finalIds.add(edge.to_node_id);
+      }
+
+      const finalCsv = unique([...finalIds]).join(",");
+
+      const nodes = finalCsv
+        ? await db("nodes", { select: "*", id: `in.(${finalCsv})` })
+        : [];
+
+      const nodeIdSet = new Set(nodes.map(n => n.id));
+
+      const edges = filteredEdges.filter(edge =>
+        nodeIdSet.has(edge.from_node_id) && nodeIdSet.has(edge.to_node_id)
+      );
+
+      return { nodes, edges };
     }
 
     function renderGraph(nodes, edges, centerNodeId, lineage) {
-      const positions = makePositions(nodes, edges, centerNodeId, lineage);
+      const positions = makeNominaPositions(nodes, edges, centerNodeId, lineage);
 
       const cyNodes = nodes.map(node => ({
         data: {
@@ -667,16 +835,13 @@
           nodeType: node.node_type,
           description: node.description_short || ""
         },
-        position: positions[node.id] ?? {
-          x: 400 + Math.random() * 120,
-          y: 300 + Math.random() * 120
-        },
+        position: positions[node.id] ?? { x: 400 + Math.random() * 120, y: 300 + Math.random() * 120 },
         classes: `${node.node_type} ${node.id === centerNodeId ? "selected" : ""}`
       }));
 
       const cyEdges = edges.map(edge => ({
         data: {
-          id: edge.id,
+          id: edgeKey(edge),
           source: edge.from_node_id,
           target: edge.to_node_id,
           code: edge.edge_type_code,
@@ -694,31 +859,33 @@
       cy = cytoscape({
         container: document.getElementById("cy"),
         elements: [...cyNodes, ...cyEdges],
-        layout: { name: "preset", fit: true, padding: 70 },
-        minZoom: 0.25,
-        maxZoom: 2.2,
-        wheelSensitivity: 0.18,
+        layout: { name: "preset", fit: true, padding: 80 },
+        minZoom: HARD_MIN_ZOOM,
+        maxZoom: 1.75,
+        wheelSensitivity: 0.014,
+        boxSelectionEnabled: false,
+        autoungrabify: false,
         style: [
           {
             selector: "node",
             style: {
-              width: 92,
-              height: 92,
+              "width": 92,
+              "height": 92,
               "background-color": "#dfeee0",
               "border-width": 1.5,
               "border-color": "#cad6ca",
-              label: "data(label)",
+              "label": "data(label)",
               "font-size": 13,
               "font-weight": 600,
               "font-family": "Inter, system-ui, sans-serif",
-              color: "#18202a",
+              "color": "#18202a",
               "text-valign": "center",
               "text-halign": "center",
               "text-wrap": "wrap",
-              "text-max-width": 86,
+              "text-max-width": 82,
               "overlay-opacity": 0,
-              "transition-property": "background-color, border-color, width, height",
-              "transition-duration": "180ms"
+              "transition-property": "background-color, border-color, width, height, opacity",
+              "transition-duration": "80ms"
             }
           },
           {
@@ -746,14 +913,15 @@
           {
             selector: "node.selected",
             style: {
-              width: 126,
-              height: 126,
+              "width": 126,
+              "height": 126,
               "background-color": "#0e1a2b",
               "border-color": "#0e1a2b",
-              color: "#ffffff",
+              "color": "#ffffff",
               "font-size": 19,
               "font-family": "Georgia, serif",
-              "font-weight": 600
+              "font-weight": 600,
+              "z-index": 10
             }
           },
           {
@@ -764,22 +932,46 @@
             }
           },
           {
+            selector: "node.lineage-node",
+            style: {
+              "border-width": 4,
+              "border-color": "#b98d5b",
+              "z-index": 20
+            }
+          },
+          {
+            selector: "node.dimmed",
+            style: {
+              "opacity": 0.22
+            }
+          },
+          {
+            selector: "node.lazy-loaded",
+            style: {
+              "opacity": 0.98
+            }
+          },
+          {
             selector: "edge",
             style: {
-              width: 2,
+              "width": 2,
               "line-color": "#8a9298",
               "target-arrow-color": "#8a9298",
               "target-arrow-shape": "triangle",
               "curve-style": "bezier",
-              label: "data(label)",
-              "font-size": 10,
+              "control-point-step-size": 34,
+              "label": "data(label)",
+              "font-size": 9,
               "font-family": "Inter, system-ui, sans-serif",
-              color: "#6f675f",
+              "color": "#6f675f",
               "text-background-color": "#f7f3ed",
-              "text-background-opacity": 0.82,
+              "text-background-opacity": 0.86,
               "text-background-padding": 3,
               "text-rotation": "autorotate",
-              "overlay-opacity": 0
+              "text-opacity": 0.48,
+              "overlay-opacity": 0,
+              "transition-property": "line-color, target-arrow-color, width, opacity, text-opacity",
+              "transition-duration": "80ms"
             }
           },
           {
@@ -800,7 +992,7 @@
           {
             selector: "edge.evolves_to",
             style: {
-              width: 2.6,
+              "width": 2.5,
               "line-color": "#45515f",
               "target-arrow-color": "#45515f"
             }
@@ -810,18 +1002,53 @@
             style: {
               "line-style": "dashed",
               "line-color": "#92b184",
+              "target-arrow-color": "#92b184",
               "target-arrow-shape": "none"
+            }
+          },
+          {
+            selector: "edge.lineage-edge",
+            style: {
+              "width": 4,
+              "line-color": "#b98d5b",
+              "target-arrow-color": "#b98d5b",
+              "text-opacity": 1,
+              "color": "#7d5a31",
+              "z-index": 15
+            }
+          },
+          {
+            selector: "edge.dimmed",
+            style: {
+              "opacity": 0.12,
+              "text-opacity": 0
+            }
+          },
+          {
+            selector: "edge:selected",
+            style: {
+              "width": 4,
+              "line-color": "#b98d5b",
+              "target-arrow-color": "#b98d5b",
+              "text-opacity": 1
             }
           }
         ]
       });
 
       cy.on("tap", "node", async (event) => {
-        await selectNode(event.target.id());
+        const nodeId = event.target.id();
+        await selectNode(nodeId);
+        await expandNodeById(nodeId, { force: true });
       });
 
       cy.on("tap", "edge", (event) => {
         const edge = event.target.data();
+
+        selectedNodeId = null;
+        selectedNodeLineage = null;
+        updateActionButtons(null, null);
+
         els.detailType.textContent = "Relationship";
         els.detailTitle.textContent = edge.label;
         els.detailSubtitle.textContent = `Certainty: ${edge.certainty ?? "unknown"}`;
@@ -830,65 +1057,1192 @@
         els.detailSources.innerHTML = "";
       });
 
-      cy.fit(null, 70);
+      cy.on("pan zoom", () => {
+        clampZoomToMinimum();
+        scheduleLazyExplore(420);
+        scheduleViewportMaintenance(900);
+      });
+
+      updateZoomLimitsForLineage(lineage);
+      centreOnSelectedNode(centerNodeId);
+      scheduleViewportMaintenance(1200);
     }
 
-    function makePositions(nodes, edges, centerNodeId, lineage) {
-      const positions = {};
-      const pathGroups = Array.isArray(lineage?.path_nodes) && lineage.path_nodes.length
-        ? lineage.path_nodes
-        : [[centerNodeId]];
+    function scheduleLazyExplore(delay = 360) {
+      if (!cy || lineageMode) return;
 
-      const isLandscapePhone = window.matchMedia("(orientation: landscape) and (max-height: 620px)").matches;
+      clearTimeout(lazyExploreTimer);
+      lazyExploreTimer = setTimeout(() => {
+        lazyExploreVisibleArea().catch(error => {
+          console.error(error);
+          showError(error.message);
+          setStatus("Expansion error");
+        });
+      }, delay);
+    }
 
-      const startX = isLandscapePhone ? 90 : 140;
-      const stepX = isLandscapePhone ? 175 : 230;
-      const centerY = isLandscapePhone ? 220 : 330;
-      const branchGap = isLandscapePhone ? 92 : 130;
+    function getActivationNodeIds() {
+      if (!cy) return [];
 
-      pathGroups.forEach((group, groupIndex) => {
-        const members = group.map(String);
-        const total = members.length;
+      const container = cy.container();
+      const width = container.clientWidth;
+      const height = container.clientHeight;
 
-        members.forEach((nodeId, memberIndex) => {
-          const offsetY = total === 1 ? 0 : (memberIndex - (total - 1) / 2) * branchGap;
+      const xMin = width * ACTIVATION_MARGIN_RATIO;
+      const xMax = width * (1 - ACTIVATION_MARGIN_RATIO);
+      const yMin = height * ACTIVATION_MARGIN_RATIO;
+      const yMax = height * (1 - ACTIVATION_MARGIN_RATIO);
+      const centre = { x: width / 2, y: height / 2 };
 
-          positions[nodeId] = {
-            x: startX + groupIndex * stepX,
-            y: centerY + offsetY
-          };
+      return cy.nodes()
+        .filter(node => {
+          if (expandedNodeIds.has(node.id())) return false;
+
+          const p = node.renderedPosition();
+
+          return p.x >= xMin && p.x <= xMax && p.y >= yMin && p.y <= yMax;
+        })
+        .sort((a, b) => {
+          const ap = a.renderedPosition();
+          const bp = b.renderedPosition();
+
+          const ad = Math.hypot(ap.x - centre.x, ap.y - centre.y);
+          const bd = Math.hypot(bp.x - centre.x, bp.y - centre.y);
+
+          // Concepts and words are the gateways to discovering name families,
+          // so give them a slight priority when they enter the active area.
+          const aType = a.data("nodeType");
+          const bType = b.data("nodeType");
+          const aBias = aType === "concept" ? -120 : aType === "word" ? -70 : 0;
+          const bBias = bType === "concept" ? -120 : bType === "word" ? -70 : 0;
+
+          return (ad + aBias) - (bd + bBias);
+        })
+        .map(node => node.id())
+        .slice(0, EXPAND_BATCH_SIZE);
+    }
+
+    async function lazyExploreVisibleArea() {
+      if (!cy || lazyExploreInProgress || lineageMode) return;
+
+      const nodeIds = getActivationNodeIds();
+
+      if (nodeIds.length === 0) return;
+
+      lazyExploreInProgress = true;
+      els.status.classList.add("loading");
+      setStatus("Expanding nearby nodes…");
+
+      try {
+        for (const nodeId of nodeIds) {
+          await expandNodeById(nodeId);
+        }
+
+        setStatus(`${currentNodes.length} nodes · ${currentEdges.length} edges`);
+      } finally {
+        lazyExploreInProgress = false;
+        els.status.classList.remove("loading");
+      }
+    }
+
+    async function expandNodeById(nodeId, options = {}) {
+      if (!cy || !nodeId) return;
+      if (!options.force && expandedNodeIds.has(nodeId)) return;
+
+      const node = currentNodes.find(item => item.id === nodeId)
+        || await getSingle("nodes", { select: "*", id: `eq.${nodeId}` });
+
+      if (!node) return;
+
+      expandedNodeIds.add(nodeId);
+
+      // If a name has a curated lineage, expand the whole little island.
+      // This is what makes Naresh pull in nara, īśa, ruler/king and man/mankind
+      // as real nodes near it, not as posters or disconnected previews.
+      if (node.node_type === "name") {
+        const lineage = await loadLineageForNode(nodeId);
+
+        if (lineage) {
+          await materializeLineageIsland(node, lineage);
+          scheduleLazyExplore(850);
+          return;
+        }
+      }
+
+      // Otherwise expand direct neighbours only.
+      await expandDirectNeighbours(node);
+      scheduleLazyExplore(850);
+    }
+
+
+    async function fetchEdgesForNodeCached(nodeId) {
+      if (edgeCacheByNodeId.has(nodeId)) {
+        return edgeCacheByNodeId.get(nodeId);
+      }
+
+      const rows = await fetchEdgesForIds([nodeId]);
+      edgeCacheByNodeId.set(nodeId, rows);
+      return rows;
+    }
+
+    async function expandDirectNeighbours(node) {
+      const rawEdges = await fetchEdgesForNodeCached(node.id);
+
+      const edgeLimit = node.node_type === "concept"
+        ? MAX_EDGES_PER_CONCEPT_EXPANSION
+        : MAX_EDGES_PER_OTHER_EXPANSION;
+
+      const sortedEdges = rawEdges
+        .filter(edge => {
+          const edgeInCanvas = !cy.getElementById(edgeKey(edge)).empty();
+          const fromInCanvas = !cy.getElementById(edge.from_node_id).empty();
+          const toInCanvas = !cy.getElementById(edge.to_node_id).empty();
+
+          // We only need edges that can add or restore visible material.
+          return !edgeInCanvas || !fromInCanvas || !toInCanvas;
+        })
+        .sort((a, b) => scoreExpansionEdge(node, b) - scoreExpansionEdge(node, a))
+        .slice(0, edgeLimit);
+
+      if (sortedEdges.length === 0) return;
+
+      const missingIds = new Set();
+
+      for (const edge of sortedEdges) {
+        if (cy.getElementById(edge.from_node_id).empty()) missingIds.add(edge.from_node_id);
+        if (cy.getElementById(edge.to_node_id).empty()) missingIds.add(edge.to_node_id);
+      }
+
+      let newNodes = [];
+
+      if (missingIds.size > 0) {
+        newNodes = await db("nodes", {
+          select: "*",
+          id: `in.(${[...missingIds].join(",")})`
+        });
+      }
+
+      addGraphElements(newNodes, sortedEdges, node.id);
+    }
+
+    function scoreExpansionEdge(parentNode, edge) {
+      const otherId = edge.from_node_id === parentNode.id ? edge.to_node_id : edge.from_node_id;
+      const otherLoaded = loadedNodeIds.has(otherId);
+
+      let score = otherLoaded ? 0 : 10;
+
+      if (parentNode.node_type === "concept" && edge.edge_type_code === "meaning_of") score += 8;
+      if (parentNode.node_type === "word" && edge.edge_type_code === "element_of") score += 8;
+      if (parentNode.node_type === "name" && ["evolves_to", "variant_of"].includes(edge.edge_type_code)) score += 7;
+
+      return score;
+    }
+
+    async function materializeLineageIsland(anchorNode, lineage) {
+      const graph = await buildLocalGraphForNode(anchorNode, lineage);
+
+      const missingNodes = graph.nodes.filter(node => cy.getElementById(node.id).empty());
+      const missingEdges = graph.edges.filter(edge => cy.getElementById(edgeKey(edge)).empty());
+
+      if (missingNodes.length === 0 && missingEdges.length === 0) return;
+
+      const positions = makeNominaPositions(graph.nodes, graph.edges, anchorNode.id, lineage);
+
+      const anchorEle = cy.getElementById(anchorNode.id);
+      const anchorPosition = anchorEle && !anchorEle.empty()
+        ? anchorEle.position()
+        : estimateExpansionParentPosition(anchorNode.id);
+
+      const localAnchor = positions[anchorNode.id] ?? { x: 540, y: 330 };
+      const dx = anchorPosition.x - localAnchor.x;
+      const dy = anchorPosition.y - localAnchor.y;
+
+      addGraphElements(missingNodes, missingEdges, anchorNode.id, (node) => {
+        const p = positions[node.id] ?? estimateNodeNearParent(anchorNode.id);
+
+        return {
+          x: p.x + dx,
+          y: p.y + dy
+        };
+      });
+    }
+
+    function addGraphElements(newNodes, edgeRows, parentId, positioner = null) {
+      if (!cy) return;
+
+      const elements = [];
+      const newNodeIds = new Set(newNodes.map(node => node.id));
+      const pendingNodeIds = new Set();
+      const parentByNode = new Map();
+
+      // Work out the specific edge-parent for every newly discovered node.
+      // This fixes the "node appears from nowhere" feeling and lets us place
+      // each new node near the real parent that revealed it.
+      for (const edge of edgeRows) {
+        const fromActive = !cy.getElementById(edge.from_node_id).empty();
+        const toActive = !cy.getElementById(edge.to_node_id).empty();
+
+        if (newNodeIds.has(edge.to_node_id) && (fromActive || edge.from_node_id === parentId)) {
+          parentByNode.set(edge.to_node_id, edge.from_node_id);
+        }
+
+        if (newNodeIds.has(edge.from_node_id) && (toActive || edge.to_node_id === parentId)) {
+          parentByNode.set(edge.from_node_id, edge.to_node_id);
+        }
+      }
+
+      const plannedPositions = new Map();
+      const occupied = buildActiveOccupiedPositions();
+
+      cy.startBatch();
+
+      // First create all missing endpoint nodes.
+      for (const node of newNodes) {
+        const alreadyInCanvas = !cy.getElementById(node.id).empty();
+
+        if (alreadyInCanvas) continue;
+
+        if (!loadedNodeIds.has(node.id)) {
+          currentNodes.push(node);
+          loadedNodeIds.add(node.id);
+        }
+
+        const cached = virtualNodeStore.get(node.id);
+        const nearestParentId = parentByNode.get(node.id) || parentId;
+
+        let position;
+
+        if (cached?.position) {
+          position = cached.position;
+        } else if (positioner) {
+          const desired = positioner(node);
+          position = findFreeNodePosition(nearestParentId, node.id, occupied, desired);
+        } else {
+          position = findFreeNodePosition(nearestParentId, node.id, occupied);
+        }
+
+        plannedPositions.set(node.id, position);
+        occupied.push({
+          id: node.id,
+          position,
+          radius: NORMAL_NODE_RADIUS
+        });
+
+        elements.push({
+          group: "nodes",
+          data: {
+            id: node.id,
+            label: node.display_label,
+            slug: node.slug,
+            nodeType: node.node_type,
+            description: node.description_short || ""
+          },
+          position,
+          classes: `${node.node_type} lazy-loaded`
+        });
+
+        pendingNodeIds.add(node.id);
+        virtualNodeStore.delete(node.id);
+      }
+
+      // Then add edges. Important: endpoints may be in pendingNodeIds, not yet
+      // visible to cy.getElementById() until this batch is added.
+      for (const edge of edgeRows) {
+        const id = edgeKey(edge);
+        const alreadyInCanvas = !cy.getElementById(id).empty();
+
+        if (alreadyInCanvas) continue;
+
+        const sourceReady = !cy.getElementById(edge.from_node_id).empty() || pendingNodeIds.has(edge.from_node_id);
+        const targetReady = !cy.getElementById(edge.to_node_id).empty() || pendingNodeIds.has(edge.to_node_id);
+
+        if (!sourceReady || !targetReady) {
+          virtualEdgeStore.set(id, {
+            data: {
+              id,
+              source: edge.from_node_id,
+              target: edge.to_node_id,
+              code: edge.edge_type_code,
+              label: edge.edge_type_code.replaceAll("_", " "),
+              certainty: edge.certainty,
+              explanation: edge.explanation || ""
+            },
+            classes: `${edge.edge_type_code} lazy-loaded`
+          });
+          continue;
+        }
+
+        if (!loadedEdgeIds.has(id)) {
+          currentEdges.push(edge);
+          loadedEdgeIds.add(id);
+        }
+
+        elements.push({
+          group: "edges",
+          data: {
+            id,
+            source: edge.from_node_id,
+            target: edge.to_node_id,
+            code: edge.edge_type_code,
+            label: edge.edge_type_code.replaceAll("_", " "),
+            certainty: edge.certainty,
+            explanation: edge.explanation || ""
+          },
+          classes: `${edge.edge_type_code} lazy-loaded`
+        });
+
+        virtualEdgeStore.delete(id);
+      }
+
+      if (elements.length === 0) {
+        cy.endBatch();
+        return;
+      }
+
+      const added = cy.add(elements);
+      cy.endBatch();
+
+      settleInsertedNodes(added.nodes(), parentByNode, parentId);
+
+      restoreVirtualisedElementsNearViewport();
+      scheduleViewportMaintenance(1800);
+    }
+
+    function activeRenderedBounds(margin = ACTIVE_COLLISION_MARGIN_PX) {
+      const container = cy.container();
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      return {
+        x1: -margin,
+        x2: width + margin,
+        y1: -margin,
+        y2: height + margin
+      };
+    }
+
+    function pointIsInActiveRenderedBounds(rendered, margin = ACTIVE_COLLISION_MARGIN_PX) {
+      const b = activeRenderedBounds(margin);
+
+      return rendered.x >= b.x1 && rendered.x <= b.x2 && rendered.y >= b.y1 && rendered.y <= b.y2;
+    }
+
+    function getNodeVisualRadius(nodeOrId) {
+      const id = typeof nodeOrId === "string" ? nodeOrId : nodeOrId?.id?.();
+      const ele = typeof nodeOrId === "string" ? cy.getElementById(nodeOrId) : nodeOrId;
+
+      if (id && id === selectedNodeId) return SELECTED_NODE_RADIUS;
+      if (ele && !ele.empty && ele.hasClass?.("selected")) return SELECTED_NODE_RADIUS;
+
+      return NORMAL_NODE_RADIUS;
+    }
+
+    function buildActiveOccupiedPositions() {
+      const occupied = [];
+
+      cy.nodes().forEach(node => {
+        const rendered = node.renderedPosition();
+
+        // Off-screen material should not push new local material around.
+        if (!pointIsInActiveRenderedBounds(rendered)) return;
+
+        occupied.push({
+          id: node.id(),
+          position: { ...node.position() },
+          radius: getNodeVisualRadius(node)
         });
       });
 
-      const usedConceptOffsets = {};
+      return occupied;
+    }
+
+    function angleFromParentToViewport(parentPosition) {
+      const extent = cy.extent();
+      const centre = {
+        x: (extent.x1 + extent.x2) / 2,
+        y: (extent.y1 + extent.y2) / 2
+      };
+
+      let dx = parentPosition.x - centre.x;
+      let dy = parentPosition.y - centre.y;
+
+      if (Math.abs(dx) + Math.abs(dy) < 0.001) {
+        return 0;
+      }
+
+      return Math.atan2(dy, dx);
+    }
+
+    function findFreeNodePosition(parentId, childId, occupied, desiredPosition = null) {
+      const parentPosition = estimateExpansionParentPosition(parentId);
+      const parentRadius = parentId ? getNodeVisualRadius(parentId) : NORMAL_NODE_RADIUS;
+      const childRadius = NORMAL_NODE_RADIUS;
+
+      let baseAngle = angleFromParentToViewport(parentPosition);
+
+      if (desiredPosition) {
+        const dx = desiredPosition.x - parentPosition.x;
+        const dy = desiredPosition.y - parentPosition.y;
+
+        if (Math.abs(dx) + Math.abs(dy) > 0.001) {
+          baseAngle = Math.atan2(dy, dx);
+        }
+      }
+
+      const hashOffset = ((hashString(childId || "") % 90) - 45) * Math.PI / 180;
+      const angleOffsets = [
+        0,
+        Math.PI / 5,
+        -Math.PI / 5,
+        Math.PI / 2.7,
+        -Math.PI / 2.7,
+        Math.PI / 1.6,
+        -Math.PI / 1.6,
+        Math.PI,
+        Math.PI * 0.78,
+        -Math.PI * 0.78
+      ];
+
+      const minRadius = Math.max(
+        NEW_NODE_MIN_PARENT_DISTANCE,
+        parentRadius + childRadius + NODE_CLEARANCE + 18
+      );
+
+      const radii = [
+        minRadius,
+        minRadius + 48,
+        minRadius + 96,
+        minRadius + 150,
+        minRadius + 215
+      ];
+
+      let best = null;
+      let bestScore = Infinity;
+
+      for (const radius of radii) {
+        for (const offset of angleOffsets) {
+          const angle = baseAngle + offset + hashOffset * 0.18;
+          const candidate = {
+            x: parentPosition.x + Math.cos(angle) * radius,
+            y: parentPosition.y + Math.sin(angle) * radius
+          };
+
+          const score = scoreCandidatePosition(candidate, childId, childRadius, occupied, parentId, parentPosition, radius, baseAngle, angle);
+
+          if (score < bestScore) {
+            bestScore = score;
+            best = candidate;
+          }
+        }
+      }
+
+      return best || {
+        x: parentPosition.x + minRadius,
+        y: parentPosition.y
+      };
+    }
+
+    function scoreCandidatePosition(candidate, childId, childRadius, occupied, parentId, parentPosition, radius, baseAngle, angle) {
+      let score = radius * 0.18;
+
+      const angleDelta = Math.abs(Math.atan2(Math.sin(angle - baseAngle), Math.cos(angle - baseAngle)));
+      score += angleDelta * 26;
+
+      for (const item of occupied) {
+        if (item.id === childId) continue;
+
+        const dx = candidate.x - item.position.x;
+        const dy = candidate.y - item.position.y;
+        const distance = Math.sqrt(dx * dx + dy * dy) || 0.001;
+
+        const needed = childRadius + item.radius + NODE_CLEARANCE;
+
+        if (distance < needed) {
+          const overlap = needed - distance;
+          score += overlap * overlap * 3.4;
+        } else if (distance < needed + 45) {
+          score += (needed + 45 - distance) * 1.6;
+        }
+      }
+
+      // Avoid placing the node directly on top of an existing edge where possible.
+      cy.edges().forEach(edge => {
+        const source = edge.source();
+        const target = edge.target();
+
+        if (source.empty() || target.empty()) return;
+        if (source.id() === parentId || target.id() === parentId) return;
+
+        const d = distancePointToSegment(candidate, source.position(), target.position());
+
+        if (d < childRadius + 18) {
+          score += (childRadius + 18 - d) * 18;
+        }
+      });
+
+      return score;
+    }
+
+    function distancePointToSegment(point, a, b) {
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const lengthSq = dx * dx + dy * dy;
+
+      if (lengthSq === 0) {
+        return Math.hypot(point.x - a.x, point.y - a.y);
+      }
+
+      let t = ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSq;
+      t = Math.max(0, Math.min(1, t));
+
+      return Math.hypot(point.x - (a.x + t * dx), point.y - (a.y + t * dy));
+    }
+
+    function settleInsertedNodes(nodes, parentByNode = new Map(), fallbackParentId = null) {
+      if (!cy || !nodes || nodes.length === 0) return;
+
+      const inserted = nodes.filter(node => node && !node.empty());
+
+      inserted.forEach(node => {
+        const parentId = parentByNode.get(node.id()) || fallbackParentId;
+        clampNodeDistanceRange(node, parentId, NEW_NODE_MIN_PARENT_DISTANCE, NEW_NODE_MAX_PARENT_DISTANCE);
+      });
+
+      for (let pass = 0; pass < 18; pass++) {
+        let moved = false;
+
+        inserted.forEach(node => {
+          const parentId = parentByNode.get(node.id()) || fallbackParentId;
+
+          cy.nodes().forEach(other => {
+            if (other.id() === node.id()) return;
+
+            const a = node.position();
+            const b = other.position();
+            const desired = getNodeVisualRadius(node) + getNodeVisualRadius(other) + NODE_CLEARANCE;
+
+            let dx = a.x - b.x;
+            let dy = a.y - b.y;
+            let distance = Math.sqrt(dx * dx + dy * dy) || 0.001;
+
+            if (distance >= desired) return;
+
+            dx /= distance;
+            dy /= distance;
+
+            const push = Math.min(32, (desired - distance) * 0.58);
+
+            node.position({
+              x: a.x + dx * push,
+              y: a.y + dy * push
+            });
+
+            clampNodeDistanceRange(node, parentId, NEW_NODE_MIN_PARENT_DISTANCE, NEW_NODE_MAX_PARENT_DISTANCE);
+            moved = true;
+          });
+        });
+
+        if (!moved) break;
+      }
+
+      // If the selected node grew, clear the space around it too.
+      if (selectedNodeId) {
+        makeRoomAroundNode(selectedNodeId);
+      }
+    }
+
+    function clampNodeDistanceRange(node, parentId, minDistance, maxDistance) {
+      if (!cy || !node || !parentId) return;
+
+      const parent = cy.getElementById(parentId);
+      const parentPosition = parent && !parent.empty()
+        ? parent.position()
+        : virtualNodeStore.get(parentId)?.position;
+
+      if (!parentPosition) return;
+
+      const p = node.position();
+      let dx = p.x - parentPosition.x;
+      let dy = p.y - parentPosition.y;
+      let distance = Math.sqrt(dx * dx + dy * dy) || 0.001;
+
+      if (distance < minDistance) {
+        const scale = minDistance / distance;
+        node.position({
+          x: parentPosition.x + dx * scale,
+          y: parentPosition.y + dy * scale
+        });
+        return;
+      }
+
+      if (distance > maxDistance) {
+        const scale = maxDistance / distance;
+        node.position({
+          x: parentPosition.x + dx * scale,
+          y: parentPosition.y + dy * scale
+        });
+      }
+    }
+
+    function makeRoomAroundNode(nodeId) {
+      if (!cy || !nodeId) return;
+
+      const centre = cy.getElementById(nodeId);
+      if (!centre || centre.empty()) return;
+
+      const centrePosition = centre.position();
+      const centreRadius = getNodeVisualRadius(centre);
+
+      cy.nodes().forEach(other => {
+        if (other.id() === nodeId) return;
+
+        const otherPosition = other.position();
+        let dx = otherPosition.x - centrePosition.x;
+        let dy = otherPosition.y - centrePosition.y;
+        let distance = Math.sqrt(dx * dx + dy * dy) || 0.001;
+
+        const desired = centreRadius + getNodeVisualRadius(other) + NODE_CLEARANCE + 8;
+
+        if (distance >= desired) return;
+
+        dx /= distance;
+        dy /= distance;
+
+        other.position({
+          x: centrePosition.x + dx * desired,
+          y: centrePosition.y + dy * desired
+        });
+      });
+    }
+
+    function estimateExpansionParentPosition(parentId) {
+      const parent = parentId ? cy.getElementById(parentId) : null;
+
+      if (parent && !parent.empty()) {
+        return parent.position();
+      }
+
+      const cached = virtualNodeStore.get(parentId);
+      if (cached?.position) {
+        return cached.position;
+      }
+
+      const extent = cy.extent();
+
+      return {
+        x: (extent.x1 + extent.x2) / 2,
+        y: (extent.y1 + extent.y2) / 2
+      };
+    }
+
+    function estimateNodeNearParent(parentId, childId = null) {
+      return findFreeNodePosition(parentId, childId, buildActiveOccupiedPositions());
+    }
+
+    function hashString(value) {
+      let hash = 0;
+      const text = String(value || "");
+
+      for (let i = 0; i < text.length; i++) {
+        hash = ((hash << 5) - hash) + text.charCodeAt(i);
+        hash |= 0;
+      }
+
+      return Math.abs(hash);
+    }
+
+    function nudgeNodesApart(nodes, parentByNode = new Map()) {
+      settleInsertedNodes(nodes, parentByNode);
+    }
+
+    function clampNodeNearParent(node, parentId, maxDistance) {
+      clampNodeDistanceRange(node, parentId, NEW_NODE_MIN_PARENT_DISTANCE, maxDistance || NEW_NODE_MAX_PARENT_DISTANCE);
+    }
+
+    function clampZoomToMinimum() {
+      if (!cy || clampZoomInProgress) return;
+
+      const min = cy.minZoom ? cy.minZoom() : HARD_MIN_ZOOM;
+
+      if (cy.zoom() >= min) return;
+
+      clampZoomInProgress = true;
+
+      const container = cy.container();
+
+      cy.zoom({
+        level: min,
+        renderedPosition: {
+          x: container.clientWidth / 2,
+          y: container.clientHeight / 2
+        }
+      });
+
+      clampZoomInProgress = false;
+    }
+
+    function updateZoomLimitsForLineage(lineage) {
+      if (!cy) return;
+
+      const lineageIds = lineage ? flattenPathNodes(lineage.path_nodes) : [];
+
+      if (!lineageIds.length) {
+        cy.minZoom(HARD_MIN_ZOOM);
+        clampZoomToMinimum();
+        return;
+      }
+
+      const elements = cy.collection();
+
+      for (const id of lineageIds) {
+        const node = cy.getElementById(id);
+        if (node && !node.empty()) {
+          elements.merge(node);
+        }
+      }
+
+      if (elements.length === 0) {
+        cy.minZoom(HARD_MIN_ZOOM);
+        clampZoomToMinimum();
+        return;
+      }
+
+      const box = elements.boundingBox();
+      const container = cy.container();
+      const availableWidth = Math.max(160, container.clientWidth - LINEAGE_FIT_PADDING * 2);
+      const availableHeight = Math.max(160, container.clientHeight - LINEAGE_FIT_PADDING * 2);
+
+      const fitZoom = Math.min(
+        availableWidth / Math.max(box.w, 1),
+        availableHeight / Math.max(box.h, 1)
+      );
+
+      const nextMinZoom = Math.max(
+        HARD_MIN_ZOOM,
+        Math.min(SOFT_MAX_MIN_ZOOM, fitZoom * LINEAGE_MIN_ZOOM_FACTOR)
+      );
+
+      cy.minZoom(nextMinZoom);
+
+      clampZoomToMinimum();
+    }
+
+    function scheduleViewportMaintenance(delay = 650) {
+      if (!cy || lineageMode) return;
+
+      clearTimeout(viewportMaintenanceTimer);
+      viewportMaintenanceTimer = setTimeout(() => {
+        maintainViewportElements();
+      }, delay);
+    }
+
+    function maintainViewportElements() {
+      if (!cy || lineageMode) return;
+
+      restoreVirtualisedElementsNearViewport();
+      virtualiseFarElements();
+    }
+
+    function isProtectedNodeId(nodeId) {
+      if (!nodeId) return false;
+      if (nodeId === selectedNodeId) return true;
+
+      // Keep the currently selected lineage stable while the user is reading it.
+      if (selectedNodeLineage) {
+        const selectedLineageIds = new Set(flattenPathNodes(selectedNodeLineage.path_nodes));
+        if (selectedLineageIds.has(nodeId)) return true;
+      }
+
+      return false;
+    }
+
+    function renderedPointIsFarAway(point, margin) {
+      const container = cy.container();
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      return (
+        point.x < -margin ||
+        point.x > width + margin ||
+        point.y < -margin ||
+        point.y > height + margin
+      );
+    }
+
+    function renderedPointIsNearViewport(point, margin) {
+      const container = cy.container();
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      return (
+        point.x >= -margin &&
+        point.x <= width + margin &&
+        point.y >= -margin &&
+        point.y <= height + margin
+      );
+    }
+
+    function modelToRenderedPoint(point) {
+      const pan = cy.pan();
+      const zoom = cy.zoom();
+
+      return {
+        x: point.x * zoom + pan.x,
+        y: point.y * zoom + pan.y
+      };
+    }
+
+    function virtualiseFarElements() {
+      if (!cy || cy.nodes().length < VIRTUALISE_AFTER_NODE_COUNT) return;
+
+      const nodesToRemove = cy.nodes().filter(node => {
+        if (isProtectedNodeId(node.id())) return false;
+
+        const p = node.renderedPosition();
+        return renderedPointIsFarAway(p, VIRTUALISE_MARGIN_PX);
+      });
+
+      if (nodesToRemove.length === 0) return;
+
+      nodesToRemove.forEach(node => {
+        const id = node.id();
+
+        if (!virtualNodeStore.has(id)) {
+          virtualNodeStore.set(id, {
+            data: { ...node.data() },
+            position: { ...node.position() },
+            classes: node.classes().join(" ")
+          });
+        }
+
+        node.connectedEdges().forEach(edge => {
+          const edgeId = edge.id();
+
+          if (!virtualEdgeStore.has(edgeId)) {
+            virtualEdgeStore.set(edgeId, {
+              data: { ...edge.data() },
+              classes: edge.classes().join(" ")
+            });
+          }
+        });
+      });
+
+      nodesToRemove.remove();
+    }
+
+    function restoreVirtualisedElementsNearViewport() {
+      if (!cy || virtualNodeStore.size === 0) return;
+
+      const restoredNodeIds = [];
+
+      for (const [id, record] of [...virtualNodeStore.entries()]) {
+        const rendered = modelToRenderedPoint(record.position);
+
+        if (!renderedPointIsNearViewport(rendered, RESTORE_MARGIN_PX)) continue;
+
+        // Restore a node only when at least one connected cached edge can also
+        // become visible soon. This avoids isolated nodes appearing from nowhere.
+        const hasActiveOrRestorableEdge = [...virtualEdgeStore.values()].some(edgeRecord => {
+          const sourceId = edgeRecord.data.source;
+          const targetId = edgeRecord.data.target;
+
+          if (sourceId !== id && targetId !== id) return false;
+
+          const otherId = sourceId === id ? targetId : sourceId;
+          return !cy.getElementById(otherId).empty() || virtualNodeStore.has(otherId);
+        });
+
+        if (!hasActiveOrRestorableEdge && !isProtectedNodeId(id)) continue;
+
+        if (cy.getElementById(id).empty()) {
+          cy.add({
+            group: "nodes",
+            data: record.data,
+            position: record.position,
+            classes: record.classes
+          });
+        }
+
+        virtualNodeStore.delete(id);
+        restoredNodeIds.push(id);
+      }
+
+      if (restoredNodeIds.length === 0) return;
+
+      // Restore any cached edges whose endpoints are now present again.
+      for (const [edgeId, record] of [...virtualEdgeStore.entries()]) {
+        const sourceId = record.data.source;
+        const targetId = record.data.target;
+
+        if (!sourceId || !targetId) continue;
+
+        if (!cy.getElementById(sourceId).empty() && !cy.getElementById(targetId).empty()) {
+          if (cy.getElementById(edgeId).empty()) {
+            cy.add({
+              group: "edges",
+              data: record.data,
+              classes: record.classes
+            });
+          }
+
+          virtualEdgeStore.delete(edgeId);
+        }
+      }
+    }
+
+    function centreOnSelectedNode(centerNodeId) {
+      if (!cy) return;
+
+      const selected = cy.getElementById(centerNodeId);
+
+      if (!selected || selected.empty()) {
+        cy.fit(null, 90);
+        return;
+      }
+
+      // Nomina is meant to be pannable. We centre the selected entry
+      // and use a readable zoom rather than forcing the entire graph
+      // into the viewport.
+      cy.center(selected);
+      cy.zoom({
+        level: Math.max(0.82, cy.minZoom()),
+        position: selected.position()
+      });
+    }
+
+    function makeNominaPositions(nodes, edges, centerNodeId, lineage) {
+      const positions = {};
+      const branchParentByChild = new Map();
+      const nodeById = new Map(nodes.map(node => [node.id, node]));
+
+      const pathGroups = Array.isArray(lineage?.path_nodes) && lineage.path_nodes.length
+        ? lineage.path_nodes.map(group => group.map(String))
+        : [[String(centerNodeId)]];
+
+      const pathNodeIds = new Set(flattenPathNodes(pathGroups));
+      const groupIndexByNode = new Map();
+
+      pathGroups.forEach((group, groupIndex) => {
+        for (const nodeId of group) {
+          groupIndexByNode.set(nodeId, groupIndex);
+        }
+      });
+
+      const pathGap = 210;
+      const totalWidth = Math.max(1, pathGroups.length - 1) * pathGap;
+      const startX = 540 - totalWidth / 2;
+      const centerY = 330;
+
+      // 1. Place lineage/path nodes on a gentle editorial spine.
+      //    If the first group contains concept nodes and the second contains word nodes,
+      //    the concepts sit neatly to the left of the words.
+      pathGroups.forEach((group, groupIndex) => {
+        const total = group.length;
+
+        group.forEach((nodeId, memberIndex) => {
+          const node = nodeById.get(nodeId);
+          const offsetY = total === 1
+            ? 0
+            : (memberIndex - (total - 1) / 2) * 128;
+
+          const waveY = Math.sin((groupIndex / Math.max(pathGroups.length - 1, 1)) * Math.PI) * -18;
+
+          positions[nodeId] = {
+            x: startX + groupIndex * pathGap,
+            y: centerY + offsetY + waveY
+          };
+
+          // Pull concept group slightly further left so concept → word reads clearly.
+          if (node?.node_type === "concept") {
+            positions[nodeId].x -= 38;
+          }
+        });
+      });
+
+      // 2. Place meaning/concept nodes close to the word they define when they are
+      //    not already part of the curated lineage path.
+      const conceptCountsByWord = {};
 
       for (const edge of edges) {
         if (edge.edge_type_code !== "meaning_of") continue;
 
-        const conceptId = edge.from_node_id;
-        const wordId = edge.to_node_id;
-        const wordPosition = positions[wordId];
+        const fromNode = nodeById.get(edge.from_node_id);
+        const toNode = nodeById.get(edge.to_node_id);
 
-        if (!wordPosition || positions[conceptId]) continue;
+        if (!fromNode || !toNode) continue;
 
-        usedConceptOffsets[wordId] = (usedConceptOffsets[wordId] ?? 0) + 1;
+        const conceptId = fromNode.node_type === "concept" ? fromNode.id : null;
+        const wordId = toNode.node_type === "word" ? toNode.id : null;
+
+        if (!conceptId || !wordId || !positions[wordId] || positions[conceptId]) continue;
+
+        const count = conceptCountsByWord[wordId] ?? 0;
+        conceptCountsByWord[wordId] = count + 1;
 
         positions[conceptId] = {
-          x: wordPosition.x - (isLandscapePhone ? 95 : 135),
-          y: wordPosition.y - (isLandscapePhone ? 66 : 95) + usedConceptOffsets[wordId] * (isLandscapePhone ? 38 : 48)
+          x: positions[wordId].x - 135,
+          y: positions[wordId].y + (count === 0 ? -66 : 66)
         };
+
+        branchParentByChild.set(conceptId, wordId);
       }
 
+      // 3. Iteratively place branch nodes near the nearest already-positioned parent.
+      //    This fixes cases like Iskandar → Sikandar, where Sikandar previously fell
+      //    back to the outer ring because Iskandar itself had only just been placed.
+      const placed = () => new Set(Object.keys(positions));
+      const branchCountsByParent = new Map();
+
+      for (let wave = 0; wave < 6; wave++) {
+        let placedThisWave = 0;
+        const placedIds = placed();
+
+        for (const edge of edges) {
+          if (edge.edge_type_code === "meaning_of") continue;
+
+          const from = nodeById.get(edge.from_node_id);
+          const to = nodeById.get(edge.to_node_id);
+
+          if (!from || !to) continue;
+
+          const fromPlaced = placedIds.has(from.id);
+          const toPlaced = placedIds.has(to.id);
+
+          let parentId = null;
+          let childId = null;
+
+          if (fromPlaced && !toPlaced) {
+            parentId = from.id;
+            childId = to.id;
+          } else if (!fromPlaced && toPlaced) {
+            parentId = to.id;
+            childId = from.id;
+          } else {
+            continue;
+          }
+
+          if (!positions[parentId] || positions[childId]) continue;
+
+          const count = branchCountsByParent.get(parentId) ?? 0;
+          branchCountsByParent.set(parentId, count + 1);
+
+          const parentGroupIndex = groupIndexByNode.get(parentId);
+          const parentNode = nodeById.get(parentId);
+          const angle = chooseBranchAngles(8, parentGroupIndex, pathGroups.length, parentNode?.id === centerNodeId)[count % 8];
+
+          const radius = edge.edge_type_code === "variant_of" ? 142 : 154;
+
+          positions[childId] = {
+            x: positions[parentId].x + Math.cos(angle) * radius,
+            y: positions[parentId].y + Math.sin(angle) * radius
+          };
+
+          branchParentByChild.set(childId, parentId);
+          placedThisWave++;
+        }
+
+        if (placedThisWave === 0) break;
+      }
+
+      // 4. Final fallback: remaining nodes go near the selected node, not randomly far away.
       const remaining = nodes.filter(node => !positions[node.id]);
+      const fallbackCenter = positions[centerNodeId] ?? { x: 540, y: 330 };
 
       remaining.forEach((node, index) => {
         const angle = (Math.PI * 2 * index) / Math.max(remaining.length, 1);
+        const radius = 230;
 
         positions[node.id] = {
-          x: startX + pathGroups.length * stepX + 160 * Math.cos(angle),
-          y: centerY + 160 * Math.sin(angle)
+          x: fallbackCenter.x + Math.cos(angle) * radius,
+          y: fallbackCenter.y + Math.sin(angle) * radius
         };
       });
+
+      // 5. Soft collision pass with parent-proximity correction.
+      return relaxPositions(positions, nodes, centerNodeId, pathNodeIds, branchParentByChild);
+    }
+
+    function chooseBranchAngles(count, parentGroupIndex, totalGroups, isCenterParent) {
+      const deg = value => value * Math.PI / 180;
+
+      if (isCenterParent) {
+        return [deg(-8), deg(42), deg(-52), deg(92), deg(-98), deg(155), deg(-155), deg(180)];
+      }
+
+      if (parentGroupIndex === undefined || parentGroupIndex === null) {
+        return [deg(-45), deg(45), deg(-110), deg(110), deg(0), deg(180)];
+      }
+
+      const lastGroup = totalGroups - 1;
+
+      if (parentGroupIndex <= 1) {
+        return [deg(-75), deg(75), deg(-125), deg(125), deg(25), deg(-25)];
+      }
+
+      if (parentGroupIndex >= lastGroup - 1) {
+        return [deg(-35), deg(35), deg(-95), deg(95), deg(145), deg(-145)];
+      }
+
+      return [deg(75), deg(-75), deg(35), deg(-35), deg(115), deg(-115)];
+    }
+
+    function relaxPositions(positions, nodes, centerNodeId, pathNodeIds = new Set(), branchParentByChild = new Map()) {
+      const minDistance = 118;
+      const maxBranchDistance = 182;
+      const ids = nodes.map(n => n.id).filter(id => positions[id]);
+
+      for (let pass = 0; pass < 30; pass++) {
+        for (let i = 0; i < ids.length; i++) {
+          for (let j = i + 1; j < ids.length; j++) {
+            const aId = ids[i];
+            const bId = ids[j];
+
+            const a = positions[aId];
+            const b = positions[bId];
+
+            let dx = b.x - a.x;
+            let dy = b.y - a.y;
+            let distance = Math.sqrt(dx * dx + dy * dy) || 0.001;
+
+            if (distance >= minDistance) continue;
+
+            const push = (minDistance - distance) / 2.5;
+            dx = dx / distance;
+            dy = dy / distance;
+
+            const aLocked = aId === centerNodeId || pathNodeIds.has(aId);
+            const bLocked = bId === centerNodeId || pathNodeIds.has(bId);
+
+            if (!aLocked) {
+              a.x -= dx * push;
+              a.y -= dy * push;
+            }
+
+            if (!bLocked) {
+              b.x += dx * push;
+              b.y += dy * push;
+            }
+          }
+        }
+
+        // Keep branch nodes visually close to their nearest parent.
+        for (const [childId, parentId] of branchParentByChild.entries()) {
+          const child = positions[childId];
+          const parent = positions[parentId];
+
+          if (!child || !parent) continue;
+
+          const dx = child.x - parent.x;
+          const dy = child.y - parent.y;
+          const distance = Math.sqrt(dx * dx + dy * dy) || 0.001;
+
+          if (distance > maxBranchDistance) {
+            const scale = maxBranchDistance / distance;
+            child.x = parent.x + dx * scale;
+            child.y = parent.y + dy * scale;
+          }
+        }
+      }
 
       return positions;
     }
@@ -897,6 +2251,9 @@
       const node = currentNodes.find(n => n.id === nodeId);
 
       if (!node) return;
+
+      selectedNodeId = nodeId;
+      selectedNodeLineage = null;
 
       els.detailType.textContent = node.node_type;
       els.detailTitle.textContent = node.display_label;
@@ -908,14 +2265,23 @@
       if (cy) {
         cy.nodes().removeClass("selected");
         cy.getElementById(nodeId).addClass("selected");
+        makeRoomAroundNode(nodeId);
       }
 
       try {
-        const details = await loadDetailsForNode(node);
+        const [details, lineage] = await Promise.all([
+          loadDetailsForNode(node),
+          node.node_type === "name" ? loadLineageForNode(node.id) : Promise.resolve(null)
+        ]);
+
+        selectedNodeLineage = lineage;
+        updateZoomLimitsForLineage(lineage || currentLineage);
         renderDetails(node, details);
+        updateActionButtons(node, lineage);
       } catch (error) {
         console.error(error);
         els.detailNotes.textContent = "Could not load detailed entry.";
+        updateActionButtons(node, null);
       }
     }
 
@@ -1039,6 +2405,131 @@
       }
     }
 
+    function updateActionButtons(node, lineage) {
+      const isNameWithLineage = node?.node_type === "name" && Boolean(lineage);
+
+      els.lineageButton.classList.toggle("hidden", !isNameWithLineage);
+
+      if (isNameWithLineage) {
+        const active = lineageMode && activeLineageNodeId === node.id;
+        els.lineageButton.textContent = active ? "Hide lineage" : "Show lineage";
+      }
+    }
+
+    async function toggleLineageForSelected() {
+      if (!selectedNodeId || !selectedNodeLineage) return;
+
+      if (lineageMode && activeLineageNodeId === selectedNodeId) {
+        clearLineageHighlight();
+        return;
+      }
+
+      const lineageIds = flattenPathNodes(selectedNodeLineage.path_nodes);
+      const currentIds = new Set(currentNodes.map(node => node.id));
+      const allPresent = lineageIds.every(id => currentIds.has(id));
+
+      if (!allPresent) {
+        const selectedNode = currentNodes.find(node => node.id === selectedNodeId);
+        if (selectedNode) {
+          await loadGraphByNode(selectedNode, { highlightLineage: true });
+          return;
+        }
+      }
+
+      applyLineageHighlight(selectedNodeLineage, selectedNodeId);
+    }
+
+    function applyLineageHighlight(lineage, nodeIdForButton = selectedNodeId) {
+      if (!cy || !lineage) return;
+
+      lineageMode = true;
+      activeLineageNodeId = nodeIdForButton;
+
+      cy.elements().removeClass("dimmed lineage-node lineage-edge");
+
+      const lineageGroups = Array.isArray(lineage.path_nodes)
+        ? lineage.path_nodes.map(group => group.map(String))
+        : [];
+
+      const lineageNodeIds = new Set(flattenPathNodes(lineageGroups));
+
+      cy.nodes().forEach(node => {
+        if (lineageNodeIds.has(node.id())) {
+          node.addClass("lineage-node");
+        } else {
+          node.addClass("dimmed");
+        }
+      });
+
+      const lineageEdgeIds = findLineageEdgeIds(lineageGroups);
+
+      cy.edges().forEach(edge => {
+        if (lineageEdgeIds.has(edge.id())) {
+          edge.addClass("lineage-edge");
+        } else {
+          edge.addClass("dimmed");
+        }
+      });
+
+      const visible = cy.elements(".lineage-node, .lineage-edge");
+
+      if (visible.length > 0) {
+        cy.animate({
+          fit: { eles: visible, padding: 110 },
+          duration: 320
+        });
+      }
+
+      const selectedNode = currentNodes.find(node => node.id === selectedNodeId);
+      updateActionButtons(selectedNode, selectedNodeLineage);
+    }
+
+    function findLineageEdgeIds(lineageGroups) {
+      const edgeIds = new Set();
+
+      for (let i = 0; i < lineageGroups.length - 1; i++) {
+        const fromGroup = new Set(lineageGroups[i].map(String));
+        const toGroup = new Set(lineageGroups[i + 1].map(String));
+
+        for (const edge of currentEdges) {
+          const source = String(edge.from_node_id);
+          const target = String(edge.to_node_id);
+
+          const forward = fromGroup.has(source) && toGroup.has(target);
+          const reverse = fromGroup.has(target) && toGroup.has(source);
+
+          if (forward || reverse) {
+            edgeIds.add(edgeKey(edge));
+          }
+        }
+      }
+
+      return edgeIds;
+    }
+
+    function clearLineageHighlight() {
+      lineageMode = false;
+      activeLineageNodeId = null;
+
+      if (cy) {
+        const previousPan = cy.pan();
+        const previousZoom = cy.zoom();
+
+        cy.elements().removeClass("dimmed lineage-node lineage-edge");
+
+        // Hide lineage should only remove the emphasis. It should not
+        // fit the entire graph, because Nomina is a pannable map.
+        cy.zoom(Math.max(previousZoom, cy.minZoom()));
+        cy.pan(previousPan);
+
+        scheduleLazyExplore(500);
+        scheduleViewportMaintenance(900);
+      }
+
+      const selectedNode = currentNodes.find(node => node.id === selectedNodeId);
+      updateActionButtons(selectedNode, selectedNodeLineage);
+    }
+
     let searchTimer = null;
 
     els.searchInput.addEventListener("input", () => {
@@ -1106,6 +2597,12 @@
       }
     });
 
+    els.lineageButton.addEventListener("click", () => {
+      toggleLineageForSelected().catch(error => {
+        showError(error.message);
+      });
+    });
+
     els.resetButton.addEventListener("click", () => {
       loadGraphBySlug("alexander", "name").catch((error) => {
         showError(error.message);
@@ -1113,26 +2610,7 @@
       });
     });
 
-    window.addEventListener("resize", () => {
-      if (!cy) return;
-
-      window.clearTimeout(window.__nominaResizeTimer);
-
-      window.__nominaResizeTimer = window.setTimeout(() => {
-        cy.resize();
-        cy.fit(null, 60);
-      }, 180);
-    });
-
-    window.addEventListener("orientationchange", () => {
-      if (!cy) return;
-
-      window.setTimeout(() => {
-        cy.resize();
-        cy.fit(null, 60);
-      }, 350);
-    });
-
+    // Boot
     loadGraphBySlug("alexander", "name").catch((error) => {
       showError(
         `${error.message}
