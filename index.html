@@ -363,7 +363,7 @@
       white-space: pre-line;
     }
 
-    @/* General tablet / mobile portrait layout */
+    /* General tablet / mobile portrait layout */
 @media (max-width: 980px) {
   body {
     height: 100dvh;
@@ -678,8 +678,8 @@
     let lazyExploreInProgress = false;
 
     const EXPAND_BATCH_SIZE = 1;
-    const MAX_EDGES_PER_CONCEPT_EXPANSION = 5;
-    const MAX_EDGES_PER_OTHER_EXPANSION = 6;
+    const MAX_EDGES_PER_CONCEPT_EXPANSION = 10;
+    const MAX_EDGES_PER_OTHER_EXPANSION = 10;
     const ACTIVATION_MARGIN_RATIO = 0.18;
 
     // Local spacing rules for newly revealed nodes.
@@ -2328,8 +2328,8 @@
 
           const parentGroupIndex = groupIndexByNode.get(parentId);
           const parentNode = nodeById.get(parentId);
-          const angle = chooseBranchAngles(8, parentGroupIndex, pathGroups.length, parentNode?.id === centerNodeId)[count % 8];
-
+          const angles = chooseBranchAngles(12, parentGroupIndex, pathGroups.length, parentNode?.id === centerNodeId);
+          const angle = angles[count % angles.length];
           const radius = edge.edge_type_code === "variant_of" ? 142 : 154;
 
           positions[childId] = {
@@ -2366,24 +2366,44 @@
       const deg = value => value * Math.PI / 180;
 
       if (isCenterParent) {
-        return [deg(-8), deg(42), deg(-52), deg(92), deg(-98), deg(155), deg(-155), deg(180)];
+        return [
+          deg(-8), deg(42), deg(-52), deg(92),
+          deg(-98), deg(155), deg(-155), deg(180),
+          deg(20), deg(-25), deg(68), deg(-72)
+        ];
       }
 
       if (parentGroupIndex === undefined || parentGroupIndex === null) {
-        return [deg(-45), deg(45), deg(-110), deg(110), deg(0), deg(180)];
+        return [
+          deg(-45), deg(45), deg(-110), deg(110),
+          deg(0), deg(180), deg(75), deg(-75),
+          deg(135), deg(-135), deg(25), deg(-25)
+        ];
       }
 
       const lastGroup = totalGroups - 1;
 
       if (parentGroupIndex <= 1) {
-        return [deg(-75), deg(75), deg(-125), deg(125), deg(25), deg(-25)];
+        return [
+          deg(-75), deg(75), deg(-125), deg(125),
+          deg(25), deg(-25), deg(150), deg(-150),
+          deg(0), deg(180), deg(50), deg(-50)
+        ];
       }
 
       if (parentGroupIndex >= lastGroup - 1) {
-        return [deg(-35), deg(35), deg(-95), deg(95), deg(145), deg(-145)];
+        return [
+          deg(-35), deg(35), deg(-95), deg(95),
+          deg(145), deg(-145), deg(180), deg(0),
+          deg(65), deg(-65), deg(120), deg(-120)
+        ];
       }
 
-      return [deg(75), deg(-75), deg(35), deg(-35), deg(115), deg(-115)];
+      return [
+        deg(75), deg(-75), deg(35), deg(-35),
+        deg(115), deg(-115), deg(160), deg(-160),
+        deg(0), deg(180), deg(55), deg(-55)
+      ];
     }
 
     function relaxPositions(positions, nodes, centerNodeId, pathNodeIds = new Set(), branchParentByChild = new Map()) {
